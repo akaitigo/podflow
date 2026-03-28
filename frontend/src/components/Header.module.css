@@ -1,0 +1,85 @@
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 20px;
+	background: white;
+	border-bottom: 1px solid #e0e0e0;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.brand {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.logo {
+	font-size: 20px;
+	font-weight: 700;
+	color: #1a1a1a;
+	margin: 0;
+}
+
+.subtitle {
+	font-size: 12px;
+	color: #888;
+}
+
+.addButton {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 16px;
+	background: #1976d2;
+	color: white;
+	border: none;
+	border-radius: 6px;
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	font-family: inherit;
+	transition: background 0.2s;
+}
+
+.addButton:hover {
+	background: #1565c0;
+}
+
+.addButton:focus-visible {
+	outline: 2px solid #1976d2;
+	outline-offset: 2px;
+}
+
+.addIcon {
+	font-size: 18px;
+	line-height: 1;
+}
+
+.errorBanner {
+	padding: 10px 20px;
+	background: #ffebee;
+	color: #c62828;
+	font-size: 14px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.errorClose {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: #c62828;
+	font-size: 18px;
+	padding: 0 4px;
+}
+
+.loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: calc(100vh - 60px);
+	font-size: 16px;
+	color: #888;
+}

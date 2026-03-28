@@ -56,3 +56,14 @@ detekt {
     parallel = true
     buildUponDefaultConfig = true
 }
+
+// Sync proto definitions from the shared proto/ directory to backend/src/main/proto/.
+// This ensures proto/ is the single source of truth (M-1).
+val syncProto by tasks.registering(Sync::class) {
+    from("${rootProject.projectDir}/../proto/podflow")
+    into("$projectDir/src/main/proto/podflow")
+}
+
+tasks.named("processResources") {
+    dependsOn(syncProto)
+}

@@ -45,6 +45,11 @@ export function canTransition(from: EpisodeStatus, to: EpisodeStatus): boolean {
 	return ALLOWED_TRANSITIONS[from].includes(to);
 }
 
+/** Type guard to check if a string value is a valid EpisodeStatus. */
+export function isEpisodeStatus(value: string): value is EpisodeStatus {
+	return Object.values(EpisodeStatus).includes(value as EpisodeStatus);
+}
+
 /** A podcast episode. */
 export interface Episode {
 	readonly id: string;

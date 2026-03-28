@@ -14,11 +14,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: bufbuild/buf-action@v1
         with:
           setup_only: true
       - run: buf lint proto/
       - run: buf format --diff proto/
+      - name: Check backward compatibility
+        if: github.event_name == 'pull_request'
+        run: buf breaking proto/ --against .git#branch=main
 
   frontend:
     runs-on: ubuntu-latest

@@ -1,6 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import type { Episode, EpisodeStatus, UpdateEpisodeInput } from "../types/episode";
-import { EPISODE_STATUSES, STATUS_LABELS, canTransition } from "../types/episode";
+import { EPISODE_STATUSES, STATUS_LABELS, canTransition, isEpisodeStatus } from "../types/episode";
 import styles from "./Modal.module.css";
 
 interface EpisodeDetailModalProps {
@@ -138,7 +138,12 @@ export function EpisodeDetailModal({ episode, onSave, onDelete, onClose }: Episo
 									id="detail-status"
 									className={styles.select}
 									value={status}
-									onChange={(e) => setStatus(e.target.value as EpisodeStatus)}
+									onChange={(e) => {
+										const value = e.target.value;
+										if (isEpisodeStatus(value)) {
+											setStatus(value);
+										}
+									}}
 								>
 									{availableStatuses.map((s) => (
 										<option key={s} value={s}>

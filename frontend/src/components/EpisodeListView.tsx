@@ -1,19 +1,13 @@
 import { useMemo } from "react";
+import { formatDate } from "../lib/format";
 import type { Episode, EpisodeStatus } from "../types/episode";
-import { EPISODE_STATUSES, STATUS_LABELS, canTransition } from "../types/episode";
+import { EPISODE_STATUSES, STATUS_LABELS, canTransition, isEpisodeStatus } from "../types/episode";
 import styles from "./KanbanBoard.module.css";
 
 interface EpisodeListViewProps {
 	readonly episodes: readonly Episode[];
 	readonly onStatusChange: (episodeId: string, newStatus: EpisodeStatus) => void;
 	readonly onSelectEpisode: (episode: Episode) => void;
-}
-
-function formatDate(iso: string): string {
-	return new Date(iso).toLocaleDateString("ja-JP", {
-		month: "short",
-		day: "numeric",
-	});
 }
 
 function StatusSelector({
@@ -34,9 +28,9 @@ function StatusSelector({
 			className={styles.statusSelect}
 			value={episode.status}
 			onChange={(e) => {
-				const newStatus = e.target.value as EpisodeStatus;
-				if (newStatus !== episode.status) {
-					onStatusChange(episode.id, newStatus);
+				const value = e.target.value;
+				if (isEpisodeStatus(value) && value !== episode.status) {
+					onStatusChange(episode.id, value);
 				}
 			}}
 			aria-label={`Change status for ${episode.title}`}

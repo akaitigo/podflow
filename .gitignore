@@ -4,6 +4,8 @@ node_modules/
 
 # Build
 frontend/dist/
+frontend/src/**/*.js
+frontend/*.tsbuildinfo
 backend/build/
 backend/.gradle/
 

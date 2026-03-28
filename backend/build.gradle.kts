@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "2.1.0"
     kotlin("plugin.allopen") version "2.1.0"
     id("io.quarkus") version "3.17.0"
+    id("io.gitlab.arturbosch.detekt") version "1.23.7"
 }
 
 repositories {
@@ -16,9 +17,12 @@ dependencies {
     implementation(enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"))
     implementation("io.quarkus:quarkus-kotlin")
     implementation("io.quarkus:quarkus-grpc")
-    implementation("io.quarkus:quarkus-jdbc-postgresql")
-    implementation("io.quarkus:quarkus-hibernate-orm-panache-kotlin")
+    // PostgreSQL + Hibernate: Issue #2 で追加
+    // implementation("io.quarkus:quarkus-jdbc-postgresql")
+    // implementation("io.quarkus:quarkus-hibernate-orm-panache-kotlin")
     implementation("io.quarkus:quarkus-arc")
+    implementation("io.quarkus:quarkus-rest")
+    implementation("io.quarkus:quarkus-rest-jackson")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
 
     testImplementation("io.quarkus:quarkus-junit5")
@@ -43,4 +47,10 @@ allOpen {
     annotation("jakarta.enterprise.context.ApplicationScoped")
     annotation("jakarta.persistence.Entity")
     annotation("io.quarkus.test.junit.QuarkusTest")
+}
+
+detekt {
+    config.setFrom("$projectDir/detekt.yml")
+    parallel = true
+    buildUponDefaultConfig = true
 }

@@ -2,28 +2,81 @@
 
 Podcast制作のワークフローを一元管理するツール。企画→収録→編集→公開の各ステージをカンバンで管理し、ゲスト調整・ショーノート生成・配信プラットフォームへの一括公開を自動化。
 
+## Demo
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│  podflow   Episode Board                                        [+ New Episode]    │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                     │
+│  PLANNING (2)    GUEST COORD (1)   RECORDING (1)  EDITING (1)  REVIEW (1)  PUBLISHED (1) │
+│  ┌────────────┐  ┌──────────────┐  ┌───────────┐  ┌─────────┐  ┌────────┐  ┌──────────┐ │
+│  │ The Future │  │ Remote       │  │ Monetizing│  │ Sound   │  │Building│  │ Podcast  │ │
+│  │ of AI in   │  │ Recording    │  │ Your      │  │ Design  │  │ a Pod- │  │ SEO and  │ │
+│  │ Podcasting │  │ Best         │  │ Podcast   │  │ for     │  │ cast   │  │Discover- │ │
+│  │            │  │ Practices    │  │           │  │ Podcasts│  │Community│  │ ability  │ │
+│  │ Alice Chen │  │              │  │ Carol     │  │         │  │        │  │          │ │
+│  │ 3月25日    │  │ Bob Williams │  │ Davis     │  │ 3月22日 │  │  Eve   │  │ Frank Lee│ │
+│  └────────────┘  │ 3月24日      │  │ 3月23日   │  └─────────┘  │Johnson │  │ 3月20日  │ │
+│  ┌────────────┐  └──────────────┘  └───────────┘               │ 3月21日│  └──────────┘ │
+│  │ Interview  │                                                └────────┘              │
+│  │ Techniques │         ← Drag & Drop でステータス変更 →                                │
+│  │ for Hosts  │         ← カードクリックで詳細モーダル →                                │
+│  │ 3月26日    │                                                                        │
+│  └────────────┘                                                                        │
+│                                                                                        │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+カンバンボードでエピソード制作ワークフローを視覚的に管理。ドラッグ&ドロップでステータス変更、クリックで詳細編集。モバイルではリストビューに自動切替。
+
 ## 何ができるか
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│  Planning    Guest Coord.   Recording     Editing    Review  Published│
-│  ┌────────┐  ┌───────────┐  ┌──────────┐                  ┌────────┐│
-│  │ #12    │  │ #10       │  │ #9       │                  │ #7     ││
-│  │ AI倫理 │  │ 地方移住  │  │ 副業の   │                  │ 起業の ││
-│  │        │  │ 🎤田中さん│  │ はじめ方 │                  │ 落とし穴│
-│  │ 3/25   │  │ 日程調整中│  │ 3/20収録 │                  │ ✅     ││
-│  └────────┘  └───────────┘  └──────────┘                  └────────┘│
-│  ┌────────┐                                                ┌────────┐│
-│  │ #11    │                                                │ #6     ││
-│  │ 読書術 │                                                │ 時間管理│
-│  └────────┘                                                └────────┘│
-└──────────────────────────────────────────────────────────────────────┘
+- **カンバンボード**: 6ステージ（Planning → Guest Coordination → Recording → Editing → Review → Published）でエピソードを管理
+- **ドラッグ&ドロップ**: dnd-kit によるスムーズなカード移動（有効な遷移のみ許可）
+- **エピソード作成・編集・削除**: モーダル UI で CRUD 操作
+- **レスポンシブ対応**: デスクトップはカンバン、モバイル（768px以下）はリストビュー
+- **ショーノート編集**: Markdown でショーノートを記録
+
+## クイックスタート
+
+```bash
+# リポジトリのクローン
+git clone https://github.com/akaitigo/podflow.git
+cd podflow
+
+# フロントエンドの起動
+cd frontend
+pnpm install
+pnpm dev
+# http://localhost:5173 でカンバンボードが表示されます（モックデータで動作）
 ```
 
-- **カンバンボード**: エピソードをドラッグ&ドロップでステージ間移動
-- **ゲスト管理**: 出演者の連絡先・出演履歴・日程調整を一元管理
-- **ショーノート自動生成**: 収録音声から文字起こし→章立て→ショーノートを自動生成
-- **一括配信**: Spotify / Apple Podcasts / YouTube への同時公開
+フロントエンドはモックAPIで完全に動作するため、バックエンドやDBのセットアップは不要です。
+
+### バックエンド（オプション）
+
+```bash
+# JDK 21+ が必要
+cd backend
+./gradlew quarkusDev   # http://localhost:8080, gRPC :9000
+```
+
+### 品質チェック
+
+```bash
+# 全チェック一括実行
+make check
+
+# フロントエンドのみ
+cd frontend && pnpm run check   # format + lint + typecheck + test + build
+
+# バックエンドのみ
+cd backend && ./gradlew build   # compile + test
+
+# Proto lint
+buf lint proto/
+```
 
 ## アーキテクチャ
 
@@ -39,7 +92,7 @@ graph LR
         D[Cloud Storage<br/>音声ファイル]
     end
 
-    A -->|gRPC-Web| B
+    A -->|Connect Protocol<br/>gRPC-Web| B
     B --> C
     B --> D
 ```
@@ -63,49 +116,62 @@ stateDiagram-v2
 
 | レイヤー | 技術 | 用途 |
 |---------|------|------|
-| フロントエンド | TypeScript / React / Vite | SPA、カンバンUI |
+| フロントエンド | TypeScript / React 19 / Vite 6 | SPA、カンバンUI |
+| ドラッグ&ドロップ | dnd-kit | カンバンカードの移動 |
 | バックエンド | Kotlin / Quarkus | gRPC API サーバー |
-| 通信 | gRPC + Protocol Buffers | 型安全なAPI通信 |
-| データベース | PostgreSQL | エピソード・ゲスト管理 |
+| 通信 | Connect Protocol (gRPC-Web) | 型安全なAPI通信 ([ADR-003](docs/adr/003-grpc-web-strategy.md)) |
+| データベース | PostgreSQL + Flyway | エピソード・ゲスト管理 ([ADR-002](docs/adr/002-data-model.md)) |
 | ストレージ | GCP Cloud Storage | 音声ファイル保存 |
 | インフラ | GCP Cloud Run | コンテナデプロイ |
+
+## 構築済みの開発基盤
+
+| カテゴリ | ツール | 説明 |
+|---------|--------|------|
+| Lint (Frontend) | [Biome](https://biomejs.dev/) + [oxlint](https://oxc-project.github.io/) | フォーマット + lint を統合 |
+| Lint (Backend) | Kotlin Compiler + Quarkus Build | `./gradlew build` でコンパイルエラー検出 |
+| Lint (Proto) | [buf](https://buf.build/) | Proto lint + format |
+| テスト (Frontend) | [Vitest](https://vitest.dev/) + Testing Library | コンポーネントテスト + ユニットテスト |
+| テスト (Backend) | JUnit 5 + Quarkus Test | gRPC サービステスト |
+| CI | GitHub Actions | proto-lint / frontend (lint+typecheck+test+build) / backend (build+test) |
+| 型安全 | TypeScript strict + Proto 定義 | フロントエンドからバックエンドまで型安全 |
+
+### テストカバレッジ
+
+- **フロントエンド**: Vitest で 24 テスト（コンポーネント・API・ビジネスロジック）
+- **バックエンド**: JUnit で 45 テスト（gRPC サービス・モデル・ヘルスチェック）
+- **CI**: 全テストが GitHub Actions で自動実行
 
 ## ドキュメント
 
 - [PRD（製品要求仕様書）](PRD.md)
 - [ユースケース](docs/use-cases.md) — ユーザーフローと操作シナリオ
-- [画面設計](docs/screens.md) — ワイヤーフレームと画面遷移
-- [ADR](docs/adr/) — アーキテクチャ判断の記録
+- [画面設計](docs/screens.md) — コンポーネント構成と画面遷移
+- **ADR（アーキテクチャ判断記録）**:
+  - [ADR-002: データモデル設計](docs/adr/002-data-model.md) — Episode + Guest エンティティ、Flyway、Panache Repository
+  - [ADR-003: gRPC-Web 方式](docs/adr/003-grpc-web-strategy.md) — Connect Protocol vs Envoy の選定
 
-## セットアップ
+## ディレクトリ構造
 
-### 前提条件
-
-- Node.js 22+ / pnpm
-- JDK 21+
-- PostgreSQL 16+
-- buf CLI
-
-### フロントエンド
-
-```bash
-cd frontend
-pnpm install
-pnpm dev        # http://localhost:5173
 ```
-
-### バックエンド
-
-```bash
-cd backend
-./gradlew quarkusDev   # http://localhost:8080, gRPC :9000
-```
-
-### Proto
-
-```bash
-buf lint proto/
-buf generate proto/
+podflow/
+├── frontend/              React SPA (Vite + TypeScript + dnd-kit)
+│   └── src/
+│       ├── components/    UI コンポーネント (KanbanBoard, Modal, Header...)
+│       ├── hooks/         カスタムフック (useEpisodes, useMediaQuery)
+│       ├── lib/           API クライアント + モックデータ
+│       ├── types/         型定義 (Episode, EpisodeStatus)
+│       └── __tests__/     Vitest テスト
+├── backend/               Quarkus API (Kotlin + gRPC)
+│   └── src/
+│       ├── main/kotlin/   サービス・モデル・リポジトリ
+│       └── test/kotlin/   JUnit テスト
+├── proto/                 Protocol Buffers 定義（共有）
+├── docs/                  ドキュメント
+│   ├── adr/               Architecture Decision Records
+│   ├── screens.md         画面設計
+│   └── use-cases.md       ユースケース
+└── .github/workflows/     CI/CD
 ```
 
 ## ライセンス

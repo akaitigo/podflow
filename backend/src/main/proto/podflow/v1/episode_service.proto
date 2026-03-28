@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package podflow.v1;
+
+import "podflow/v1/episode.proto";
+
+option java_multiple_files = true;
+option java_package = "com.akaitigo.podflow.grpc";
+
+// CreateEpisodeRequest is the request message for creating an episode.
+message CreateEpisodeRequest {
+  // Title of the episode to create.
+  string title = 1;
+  // Description or summary of the episode.
+  string description = 2;
+  // Identifier of the associated guest.
+  string guest_id = 3;
+}
+
+// CreateEpisodeResponse is the response message for creating an episode.
+message CreateEpisodeResponse {
+  // The created episode.
+  Episode episode = 1;
+}
+
+// GetEpisodeRequest is the request message for retrieving an episode.
+message GetEpisodeRequest {
+  // Unique identifier of the episode to retrieve.
+  string id = 1;
+}
+
+// GetEpisodeResponse is the response message for retrieving an episode.
+message GetEpisodeResponse {
+  // The requested episode.
+  Episode episode = 1;
+}
+
+// ListEpisodesRequest is the request message for listing episodes.
+message ListEpisodesRequest {
+  // Maximum number of episodes to return.
+  int32 page_size = 1;
+  // Token for pagination.
+  string page_token = 2;
+  // Optional status filter.
+  EpisodeStatus status_filter = 3;
+}
+
+// ListEpisodesResponse is the response message for listing episodes.
+message ListEpisodesResponse {
+  // The list of episodes.
+  repeated Episode episodes = 1;
+  // Token for the next page, empty if no more results.
+  string next_page_token = 2;
+}
+
+// UpdateEpisodeRequest is the request message for updating an episode.
+message UpdateEpisodeRequest {
+  // The episode with updated fields.
+  Episode episode = 1;
+}
+
+// UpdateEpisodeResponse is the response message for updating an episode.
+message UpdateEpisodeResponse {
+  // The updated episode.
+  Episode episode = 1;
+}
+
+// DeleteEpisodeRequest is the request message for deleting an episode.
+message DeleteEpisodeRequest {
+  // Unique identifier of the episode to delete.
+  string id = 1;
+}
+
+// DeleteEpisodeResponse is the response message for deleting an episode.
+message DeleteEpisodeResponse {}
+
+// EpisodeService provides CRUD operations for podcast episodes.
+service EpisodeService {
+  // CreateEpisode creates a new episode.
+  rpc CreateEpisode(CreateEpisodeRequest) returns (CreateEpisodeResponse);
+  // GetEpisode retrieves an episode by its identifier.
+  rpc GetEpisode(GetEpisodeRequest) returns (GetEpisodeResponse);
+  // ListEpisodes returns a paginated list of episodes.
+  rpc ListEpisodes(ListEpisodesRequest) returns (ListEpisodesResponse);
+  // UpdateEpisode updates an existing episode.
+  rpc UpdateEpisode(UpdateEpisodeRequest) returns (UpdateEpisodeResponse);
+  // DeleteEpisode removes an episode.
+  rpc DeleteEpisode(DeleteEpisodeRequest) returns (DeleteEpisodeResponse);
+}

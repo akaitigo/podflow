@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package podflow.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_package = "com.akaitigo.podflow.grpc";
+
+// EpisodeStatus represents the workflow stage of a podcast episode.
+enum EpisodeStatus {
+  // Default unspecified value.
+  EPISODE_STATUS_UNSPECIFIED = 0;
+  // Episode is in initial planning phase.
+  EPISODE_STATUS_PLANNING = 1;
+  // Coordinating with guest(s) for scheduling.
+  EPISODE_STATUS_GUEST_COORDINATION = 2;
+  // Episode is being recorded.
+  EPISODE_STATUS_RECORDING = 3;
+  // Post-production editing in progress.
+  EPISODE_STATUS_EDITING = 4;
+  // Episode is under review before publishing.
+  EPISODE_STATUS_REVIEW = 5;
+  // Episode has been published.
+  EPISODE_STATUS_PUBLISHED = 6;
+}
+
+// Guest represents a podcast guest.
+message Guest {
+  // Unique identifier for the guest.
+  string id = 1;
+  // Full name of the guest.
+  string name = 2;
+  // Email address of the guest.
+  string email = 3;
+  // Short biography of the guest.
+  string bio = 4;
+  // List of social media profile URLs.
+  repeated string social_links = 5;
+}
+
+// Episode represents a single podcast episode and its metadata.
+message Episode {
+  // Unique identifier for the episode.
+  string id = 1;
+  // Title of the episode.
+  string title = 2;
+  // Description or summary of the episode.
+  string description = 3;
+  // Current workflow status of the episode.
+  EpisodeStatus status = 4;
+  // Identifier of the associated guest.
+  string guest_id = 5;
+  // URL to the audio file.
+  string audio_url = 6;
+  // Show notes in markdown format.
+  string show_notes = 7;
+  // Timestamp when the episode was published.
+  google.protobuf.Timestamp published_at = 8;
+  // Timestamp when the episode was created.
+  google.protobuf.Timestamp created_at = 9;
+  // Timestamp when the episode was last updated.
+  google.protobuf.Timestamp updated_at = 10;
+}

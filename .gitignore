@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+frontend/dist/
+backend/build/
+backend/.gradle/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Gradle
+gradle/wrapper/gradle-wrapper.jar
+
+# Quarkus
+backend/.quarkus/
+
+# Test coverage
+coverage/
+*.lcov

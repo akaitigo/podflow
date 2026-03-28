@@ -21,9 +21,12 @@ jobs:
           setup_only: true
       - run: buf lint proto/
       - run: buf format --diff proto/
+      - name: Fetch main branch for breaking check
+        if: github.event_name == 'pull_request'
+        run: git fetch origin main
       - name: Check backward compatibility
         if: github.event_name == 'pull_request'
-        run: buf breaking proto/ --against .git#branch=main
+        run: buf breaking proto/ --against .git#branch=origin/main
 
   frontend:
     runs-on: ubuntu-latest

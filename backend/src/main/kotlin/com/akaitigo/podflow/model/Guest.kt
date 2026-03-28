@@ -6,6 +6,7 @@ import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
+import jakarta.persistence.PreUpdate
 import jakarta.persistence.Table
 import java.time.Instant
 import java.util.UUID
@@ -38,4 +39,9 @@ class Guest : PanacheEntityBase {
 
     @Column(name = "updated_at", nullable = false)
     var updatedAt: Instant = Instant.now()
+
+    @PreUpdate
+    fun onPreUpdate() {
+        updatedAt = Instant.now()
+    }
 }

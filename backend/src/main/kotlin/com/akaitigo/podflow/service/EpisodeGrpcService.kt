@@ -29,7 +29,6 @@ import com.akaitigo.podflow.grpc.EpisodeStatus as ProtoEpisodeStatus
 /** gRPC service implementing Episode CRUD operations. */
 @GrpcService
 @Blocking
-@Transactional
 class EpisodeGrpcService : EpisodeService {
 
     @Inject
@@ -41,6 +40,7 @@ class EpisodeGrpcService : EpisodeService {
     @Inject
     lateinit var episodeMapper: EpisodeMapper
 
+    @Transactional
     override fun createEpisode(request: CreateEpisodeRequest): Uni<CreateEpisodeResponse> =
         Uni.createFrom().item {
             validateTitle(request.title)
@@ -107,6 +107,7 @@ class EpisodeGrpcService : EpisodeService {
             builder.build()
         }
 
+    @Transactional
     override fun updateEpisode(request: UpdateEpisodeRequest): Uni<UpdateEpisodeResponse> =
         Uni.createFrom().item {
             val protoEpisode = request.episode
@@ -117,9 +118,14 @@ class EpisodeGrpcService : EpisodeService {
             val id = parseUuid(protoEpisode.id, "id")
             val existing = findEpisodeOrThrow(id)
 
-            applyFieldUpdates(existing, protoEpisode)
-            applyStatusUpdate(existing, protoEpisode)
-            applyGuestUpdate(existing, protoEpisode)
+            val mask = request.updateMask
+            if (mask != null && mask.pathsCount > 0) {
+                applyMaskedUpdates(existing, protoEpisode, mask)
+            } else {
+                applyFieldUpdates(existing, protoEpisode)
+                applyStatusUpdate(existing, protoEpisode)
+                applyGuestUpdate(existing, protoEpisode)
+            }
 
             existing.updatedAt = Instant.now()
             episodeRepository.persistAndFlush(existing)
@@ -129,14 +135,54 @@ class EpisodeGrpcService : EpisodeService {
                 .build()
         }
 
+    @Transactional
     override fun deleteEpisode(request: DeleteEpisodeRequest): Uni<DeleteEpisodeResponse> =
         Uni.createFrom().item {
             val id = parseUuid(request.id, "id")
             val episode = findEpisodeOrThrow(id)
+
+            if (episode.status == EpisodeStatus.PUBLISHED) {
+                throw StatusRuntimeException(
+                    Status.FAILED_PRECONDITION.withDescription(
+                        "Cannot delete a published episode: $id",
+                    ),
+                )
+            }
+
             episodeRepository.delete(episode)
 
             DeleteEpisodeResponse.getDefaultInstance()
         }
+
+    private fun applyMaskedUpdates(
+        existing: Episode,
+        proto: com.akaitigo.podflow.grpc.Episode,
+        mask: com.google.protobuf.FieldMask,
+    ) {
+        for (path in mask.pathsList) {
+            when (path) {
+                "title" -> {
+                    validateTitle(proto.title)
+                    existing.title = proto.title
+                }
+                "description" -> existing.description = proto.description.ifEmpty { null }
+                "audio_url" -> {
+                    if (proto.audioUrl.isNotEmpty()) {
+                        validateAudioUrl(proto.audioUrl)
+                    }
+                    existing.audioUrl = proto.audioUrl.ifEmpty { null }
+                }
+                "show_notes" -> existing.showNotes = proto.showNotes.ifEmpty { null }
+                "status" -> applyStatusUpdate(existing, proto)
+                "guest_id" -> applyGuestUpdate(existing, proto)
+                else -> throw StatusRuntimeException(
+                    Status.INVALID_ARGUMENT.withDescription(
+                        "Unknown update_mask path: $path",
+                    ),
+                )
+            }
+        }
+    }
 
     private fun applyFieldUpdates(
         existing: Episode,
@@ -150,6 +196,7 @@ class EpisodeGrpcService : EpisodeService {
             existing.description = proto.description
         }
         if (proto.audioUrl.isNotEmpty()) {
+            validateAudioUrl(proto.audioUrl)
             existing.audioUrl = proto.audioUrl
         }
         if (proto.showNotes.isNotEmpty()) {
@@ -196,53 +243,71 @@ class EpisodeGrpcService : EpisodeService {
                 Status.NOT_FOUND.withDescription("Episode not found: $id"),
             )
 
-    private fun validateTitle(title: String) {
-        if (title.isBlank()) {
-            throw StatusRuntimeException(
-                Status.INVALID_ARGUMENT.withDescription("Title must not be blank"),
-            )
-        }
-    }
-
-    private fun validateStatusTransition(current: EpisodeStatus, target: EpisodeStatus) {
-        if (!current.canTransitionTo(target)) {
-            throw StatusRuntimeException(
-                Status.INVALID_ARGUMENT.withDescription(
-                    "Invalid status transition from $current to $target",
-                ),
-            )
-        }
-    }
-
-    private fun parseUuid(value: String, fieldName: String): UUID =
-        try {
-            UUID.fromString(value)
-        } catch (_: IllegalArgumentException) {
-            throw StatusRuntimeException(
-                Status.INVALID_ARGUMENT.withDescription("Invalid UUID for $fieldName: $value"),
-            )
-        }
-
-    private fun parsePageToken(token: String): Int {
-        if (token.isEmpty()) {
-            return 0
-        }
-        return try {
-            val page = token.toInt()
-            if (page < 0) {
-                throw StatusRuntimeException(
-                    Status.INVALID_ARGUMENT.withDescription("page_token must be non-negative"),
-                )
-            }
-            page
-        } catch (_: NumberFormatException) {
-            throw StatusRuntimeException(
-                Status.INVALID_ARGUMENT.withDescription("Invalid page_token: $token"),
-            )
-        }
-    }
-
     companion object {
         private const val DEFAULT_PAGE_SIZE = 20
+        private const val MAX_TITLE_LENGTH = 500
+
+        fun validateTitle(title: String) {
+            if (title.isBlank()) {
+                throw StatusRuntimeException(
+                    Status.INVALID_ARGUMENT.withDescription("Title must not be blank"),
+                )
+            }
+            if (title.length > MAX_TITLE_LENGTH) {
+                throw StatusRuntimeException(
+                    Status.INVALID_ARGUMENT.withDescription(
+                        "Title must not exceed $MAX_TITLE_LENGTH characters",
+                    ),
+                )
+            }
+        }
+
+        fun validateAudioUrl(url: String) {
+            if (!url.startsWith("https://") && !url.startsWith("http://")) {
+                throw StatusRuntimeException(
+                    Status.INVALID_ARGUMENT.withDescription(
+                        "audio_url must be a valid HTTP(S) URL",
+                    ),
+                )
+            }
+        }
+
+        fun validateStatusTransition(current: EpisodeStatus, target: EpisodeStatus) {
+            if (!current.canTransitionTo(target)) {
+                throw StatusRuntimeException(
+                    Status.INVALID_ARGUMENT.withDescription(
+                        "Invalid status transition from $current to $target",
+                    ),
+                )
+            }
+        }
+
+        fun parseUuid(value: String, fieldName: String): UUID =
+            try {
+                UUID.fromString(value)
+            } catch (_: IllegalArgumentException) {
+                throw StatusRuntimeException(
+                    Status.INVALID_ARGUMENT.withDescription("Invalid UUID for $fieldName: $value"),
+                )
+            }
+
+        fun parsePageToken(token: String): Int {
+            if (token.isEmpty()) {
+                return 0
+            }
+            return try {
+                val page = token.toInt()
+                if (page < 0) {
+                    throw StatusRuntimeException(
+                        Status.INVALID_ARGUMENT.withDescription("page_token must be non-negative"),
+                    )
+                }
+                page
+            } catch (_: NumberFormatException) {
+                throw StatusRuntimeException(
+                    Status.INVALID_ARGUMENT.withDescription("Invalid page_token: $token"),
+                )
+            }
+        }
     }
 }

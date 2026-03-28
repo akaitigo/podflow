@@ -1,20 +1,11 @@
 import { useDraggable } from "@dnd-kit/core";
+import { formatDateTime } from "../lib/format";
 import type { Episode } from "../types/episode";
 import styles from "./KanbanBoard.module.css";
 
 interface EpisodeCardProps {
 	readonly episode: Episode;
 	readonly onSelect: (episode: Episode) => void;
-}
-
-function formatDate(iso: string): string {
-	const date = new Date(iso);
-	return date.toLocaleDateString("ja-JP", {
-		month: "short",
-		day: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-	});
 }
 
 export function EpisodeCard({ episode, onSelect }: EpisodeCardProps) {
@@ -31,7 +22,7 @@ export function EpisodeCard({ episode, onSelect }: EpisodeCardProps) {
 				<p className={styles.cardTitle}>{episode.title}</p>
 				<div className={styles.cardMeta}>
 					{episode.guestName && <span className={styles.cardGuest}>{episode.guestName}</span>}
-					<span className={styles.cardDate}>{formatDate(episode.updatedAt)}</span>
+					<span className={styles.cardDate}>{formatDateTime(episode.updatedAt)}</span>
 				</div>
 			</button>
 		</div>
@@ -45,7 +36,7 @@ export function EpisodeCardOverlay({ episode }: { readonly episode: Episode }) {
 			<p className={styles.cardTitle}>{episode.title}</p>
 			<div className={styles.cardMeta}>
 				{episode.guestName && <span className={styles.cardGuest}>{episode.guestName}</span>}
-				<span className={styles.cardDate}>{formatDate(episode.updatedAt)}</span>
+				<span className={styles.cardDate}>{formatDateTime(episode.updatedAt)}</span>
 			</div>
 		</div>
 	);

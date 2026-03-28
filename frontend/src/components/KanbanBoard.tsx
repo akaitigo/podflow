@@ -11,7 +11,7 @@ import {
 } from "@dnd-kit/core";
 import { useCallback, useMemo, useState } from "react";
 import type { Episode, EpisodeStatus } from "../types/episode";
-import { EPISODE_STATUSES, canTransition } from "../types/episode";
+import { EPISODE_STATUSES, canTransition, isEpisodeStatus } from "../types/episode";
 import { EpisodeCardOverlay } from "./EpisodeCard";
 import styles from "./KanbanBoard.module.css";
 import { KanbanColumn } from "./KanbanColumn";
@@ -64,14 +64,16 @@ export function KanbanBoard({ episodes, onStatusChange, onSelectEpisode }: Kanba
 			if (!over) return;
 
 			const episodeId = String(active.id);
-			const targetStatus = String(over.id) as EpisodeStatus;
+			const targetStatusStr = String(over.id);
+			if (!isEpisodeStatus(targetStatusStr)) return;
+
 			const episode = episodes.find((e) => e.id === episodeId);
 
 			if (!episode) return;
-			if (episode.status === targetStatus) return;
-			if (!canTransition(episode.status, targetStatus)) return;
+			if (episode.status === targetStatusStr) return;
+			if (!canTransition(episode.status, targetStatusStr)) return;
 
-			onStatusChange(episodeId, targetStatus);
+			onStatusChange(episodeId, targetStatusStr);
 		},
 		[episodes, onStatusChange],
 	);

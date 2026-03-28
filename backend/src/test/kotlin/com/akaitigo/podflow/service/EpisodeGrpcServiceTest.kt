@@ -278,6 +278,59 @@ class EpisodeGrpcServiceTest {
     }
 
     @Test
+    fun `deleteEpisode on published episode fails with FAILED_PRECONDITION`() {
+        val created = createTestEpisode("Published No Delete")
+        transitionTo(created.id, ProtoEpisodeStatus.EPISODE_STATUS_RECORDING)
+        transitionTo(created.id, ProtoEpisodeStatus.EPISODE_STATUS_EDITING)
+        transitionTo(created.id, ProtoEpisodeStatus.EPISODE_STATUS_REVIEW)
+        transitionTo(created.id, ProtoEpisodeStatus.EPISODE_STATUS_PUBLISHED)
+
+        val request = DeleteEpisodeRequest.newBuilder()
+            .setId(created.id)
+            .build()
+
+        val exception = assertThrows<StatusRuntimeException> {
+            client.deleteEpisode(request).await().indefinitely()
+        }
+        assertEquals(io.grpc.Status.FAILED_PRECONDITION.code, exception.status.code)
+        assertTrue(requireNotNull(exception.status.description).contains("published"))
+    }
+
+    @Test
+    fun `createEpisode with title exceeding 500 chars fails`() {
+        val longTitle = "A".repeat(501)
+        val request = CreateEpisodeRequest.newBuilder()
+            .setTitle(longTitle)
+            .build()
+
+        val exception = assertThrows<StatusRuntimeException> {
+            client.createEpisode(request).await().indefinitely()
+        }
+        assertEquals(io.grpc.Status.INVALID_ARGUMENT.code, exception.status.code)
+        assertTrue(requireNotNull(exception.status.description).contains("500"))
+    }
+
+    @Test
+    fun `updateEpisode with invalid audio_url fails`() {
+        val created = createTestEpisode("Audio URL Test")
+
+        val updatedProto = ProtoEpisode.newBuilder()
+            .setId(created.id)
+            .setAudioUrl("ftp://invalid-protocol.com/audio.mp3")
+            .build()
+
+        val request = UpdateEpisodeRequest.newBuilder()
+            .setEpisode(updatedProto)
+            .build()
+
+        val exception = assertThrows<StatusRuntimeException> {
+            client.updateEpisode(request).await().indefinitely()
+        }
+        assertEquals(io.grpc.Status.INVALID_ARGUMENT.code, exception.status.code)
+        assertTrue(requireNotNull(exception.status.description).contains("audio_url"))
+    }
+
+    @Test
     fun `full workflow transition path`() {
         val created = createTestEpisode("Workflow Test")
 

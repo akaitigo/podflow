@@ -1,0 +1,59 @@
+build:
+  maxIssues: 0
+
+complexity:
+  TooManyFunctions:
+    active: true
+    thresholdInFiles: 15
+    thresholdInClasses: 15
+    thresholdInInterfaces: 15
+    thresholdInObjects: 15
+    thresholdInEnums: 15
+  CognitiveComplexMethod:
+    active: true
+    threshold: 15
+
+exceptions:
+  ThrowingExceptionsWithoutMessageOrCause:
+    active: true
+
+naming:
+  FunctionNaming:
+    active: true
+    functionPattern: '^[a-z][a-zA-Z0-9]*$'
+  VariableNaming:
+    active: true
+    variablePattern: '^[a-z][a-zA-Z0-9]*$'
+
+performance:
+  ArrayPrimitive:
+    active: true
+
+potential-bugs:
+  UnsafeCallOnNullableType:
+    active: true
+  UnsafeCast:
+    active: true
+
+style:
+  ForbiddenComment:
+    active: true
+    comments: ['TODO:', 'FIXME:', 'STOPSHIP:']
+  ForbiddenMethodCall:
+    active: true
+    methods: ['kotlin.io.println', 'kotlin.io.print']
+  MaxLineLength:
+    active: true
+    maxLineLength: 120
+    excludePackageStatements: true
+    excludeImportStatements: true
+  BracesOnIfStatements:
+    active: true
+    singleLine: always
+    multiLine: always
+  NewLineAtEndOfFile:
+    active: true
+  UseRequireNotNull:
+    active: true
+  UseCheckNotNull:
+    active: true

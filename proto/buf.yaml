@@ -1,0 +1,15 @@
+version: v2
+
+modules:
+  - path: .
+    name: buf.build/akaitigo/podflow
+
+lint:
+  use:
+    - STANDARD
+    - COMMENTS
+  disallow_comment_ignores: true
+
+breaking:
+  use:
+    - FILE

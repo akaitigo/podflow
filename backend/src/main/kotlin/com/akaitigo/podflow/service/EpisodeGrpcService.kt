@@ -191,16 +191,12 @@ class EpisodeGrpcService @Inject constructor(
             validateTitle(proto.title)
             existing.title = proto.title
         }
-        if (proto.description.isNotEmpty()) {
-            existing.description = proto.description
-        }
+        existing.description = proto.description.ifEmpty { null }
         if (proto.audioUrl.isNotEmpty()) {
             validateAudioUrl(proto.audioUrl)
-            existing.audioUrl = proto.audioUrl
         }
-        if (proto.showNotes.isNotEmpty()) {
-            existing.showNotes = proto.showNotes
-        }
+        existing.audioUrl = proto.audioUrl.ifEmpty { null }
+        existing.showNotes = proto.showNotes.ifEmpty { null }
     }
 
     private fun applyStatusUpdate(
@@ -282,7 +278,29 @@ class EpisodeGrpcService @Inject constructor(
                     Status.INVALID_ARGUMENT.withDescription(reason),
                 )
             }
+            rejectPrivateHost(parsed.host)
         }
+
+        private fun rejectPrivateHost(host: String) {
+            val resolved = try {
+                java.net.InetAddress.getByName(host)
+            } catch (_: java.net.UnknownHostException) {
+                throw StatusRuntimeException(
+                    Status.INVALID_ARGUMENT.withDescription("audio_url host cannot be resolved: $host"),
+                )
+            }
+            if (isNonRoutableAddress(resolved)) {
+                throw StatusRuntimeException(
+                    Status.INVALID_ARGUMENT.withDescription("audio_url must not point to a private/local address"),
+                )
+            }
+        }
+
+        private fun isNonRoutableAddress(address: java.net.InetAddress): Boolean =
+            address.isLoopbackAddress ||
+                address.isLinkLocalAddress ||
+                address.isSiteLocalAddress ||
+                address.isAnyLocalAddress
 
         fun validateStatusTransition(current: EpisodeStatus, target: EpisodeStatus) {
             if (!current.canTransitionTo(target)) {

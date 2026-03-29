@@ -272,18 +272,14 @@ class EpisodeGrpcService @Inject constructor(
                     ),
                 )
             }
-            if (parsed.scheme != "https") {
-                throw StatusRuntimeException(
-                    Status.INVALID_ARGUMENT.withDescription(
-                        "audio_url must use https scheme",
-                    ),
-                )
+            val reason = when {
+                parsed.scheme != "https" -> "audio_url must use https scheme"
+                parsed.host.isNullOrBlank() -> "audio_url must have a valid host"
+                else -> null
             }
-            if (parsed.host.isNullOrBlank()) {
+            if (reason != null) {
                 throw StatusRuntimeException(
-                    Status.INVALID_ARGUMENT.withDescription(
-                        "audio_url must have a valid host",
-                    ),
+                    Status.INVALID_ARGUMENT.withDescription(reason),
                 )
             }
         }

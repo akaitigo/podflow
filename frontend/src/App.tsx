@@ -29,24 +29,24 @@ function App() {
 	);
 
 	const handleCreateSubmit = useCallback(
-		(input: CreateEpisodeInput) => {
-			createEpisode(input);
+		async (input: CreateEpisodeInput) => {
+			await createEpisode(input);
 			setShowCreateModal(false);
 		},
 		[createEpisode],
 	);
 
 	const handleSaveDetail = useCallback(
-		(input: UpdateEpisodeInput) => {
-			updateEpisode(input);
+		async (input: UpdateEpisodeInput) => {
+			await updateEpisode(input);
 			setSelectedEpisode(null);
 		},
 		[updateEpisode],
 	);
 
 	const handleDeleteEpisode = useCallback(
-		(id: string) => {
-			deleteEpisode(id);
+		async (id: string) => {
+			await deleteEpisode(id);
 			setSelectedEpisode(null);
 		},
 		[deleteEpisode],

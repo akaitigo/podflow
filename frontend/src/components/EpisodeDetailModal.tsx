@@ -5,8 +5,8 @@ import styles from "./Modal.module.css";
 
 interface EpisodeDetailModalProps {
 	readonly episode: Episode;
-	readonly onSave: (input: UpdateEpisodeInput) => void;
-	readonly onDelete: (id: string) => void;
+	readonly onSave: (input: UpdateEpisodeInput) => void | Promise<void>;
+	readonly onDelete: (id: string) => void | Promise<void>;
 	readonly onClose: () => void;
 }
 

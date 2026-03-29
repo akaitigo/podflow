@@ -369,7 +369,7 @@ class EpisodeGrpcServiceTest {
 
         val updatedProto = ProtoEpisode.newBuilder()
             .setId(created.id)
-            .setAudioUrl("https://cdn.example.com/audio.mp3")
+            .setAudioUrl("https://storage.googleapis.com/audio.mp3")
             .build()
 
         val request = UpdateEpisodeRequest.newBuilder()
@@ -377,7 +377,74 @@ class EpisodeGrpcServiceTest {
             .build()
 
         val response = client.updateEpisode(request).await().indefinitely()
-        assertEquals("https://cdn.example.com/audio.mp3", response.episode.audioUrl)
+        assertEquals("https://storage.googleapis.com/audio.mp3", response.episode.audioUrl)
+    }
+
+    @Test
+    fun `updateEpisode with localhost audio_url fails`() {
+        val created = createTestEpisode("SSRF Test")
+
+        val updatedProto = ProtoEpisode.newBuilder()
+            .setId(created.id)
+            .setAudioUrl("https://localhost/audio.mp3")
+            .build()
+
+        val request = UpdateEpisodeRequest.newBuilder()
+            .setEpisode(updatedProto)
+            .build()
+
+        val exception = assertThrows<StatusRuntimeException> {
+            client.updateEpisode(request).await().indefinitely()
+        }
+        assertEquals(io.grpc.Status.INVALID_ARGUMENT.code, exception.status.code)
+        assertTrue(requireNotNull(exception.status.description).contains("private"))
+    }
+
+    @Test
+    fun `updateEpisode with private IP audio_url fails`() {
+        val created = createTestEpisode("SSRF Private IP Test")
+
+        val updatedProto = ProtoEpisode.newBuilder()
+            .setId(created.id)
+            .setAudioUrl("https://127.0.0.1/audio.mp3")
+            .build()
+
+        val request = UpdateEpisodeRequest.newBuilder()
+            .setEpisode(updatedProto)
+            .build()
+
+        val exception = assertThrows<StatusRuntimeException> {
+            client.updateEpisode(request).await().indefinitely()
+        }
+        assertEquals(io.grpc.Status.INVALID_ARGUMENT.code, exception.status.code)
+        assertTrue(requireNotNull(exception.status.description).contains("private"))
+    }
+
+    @Test
+    fun `updateEpisode without mask clears optional fields with empty string`() {
+        val created = createTestEpisode("Clear Fields Test")
+
+        // First set description
+        val withDesc = ProtoEpisode.newBuilder()
+            .setId(created.id)
+            .setDescription("Some description")
+            .build()
+        val setRequest = UpdateEpisodeRequest.newBuilder()
+            .setEpisode(withDesc)
+            .build()
+        val setResponse = client.updateEpisode(setRequest).await().indefinitely()
+        assertEquals("Some description", setResponse.episode.description)
+
+        // Now update without mask and empty description -> should clear it
+        val clearProto = ProtoEpisode.newBuilder()
+            .setId(created.id)
+            .setTitle("Clear Fields Test")
+            .build()
+        val clearRequest = UpdateEpisodeRequest.newBuilder()
+            .setEpisode(clearProto)
+            .build()
+        val clearResponse = client.updateEpisode(clearRequest).await().indefinitely()
+        assertEquals("", clearResponse.episode.description)
     }
 
     @Test

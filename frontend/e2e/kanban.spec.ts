@@ -50,7 +50,8 @@ test.describe("Kanban Board", () => {
 	});
 
 	test("opens episode detail modal when clicking a card", async ({ page }) => {
-		await page.getByText("The Future of AI in Podcasting").click();
+		const planningColumn = page.getByLabel("Planning column");
+		await planningColumn.getByRole("button", { name: /The Future of AI in Podcasting/ }).click();
 
 		const dialog = page.getByRole("dialog");
 		await expect(dialog).toBeVisible();
@@ -60,7 +61,8 @@ test.describe("Kanban Board", () => {
 	});
 
 	test("edits an episode title via the detail modal", async ({ page }) => {
-		await page.getByText("The Future of AI in Podcasting").click();
+		const planningColumn = page.getByLabel("Planning column");
+		await planningColumn.getByRole("button", { name: /The Future of AI in Podcasting/ }).click();
 
 		const dialog = page.getByRole("dialog");
 		const titleInput = dialog.getByLabel("Title");
@@ -70,7 +72,7 @@ test.describe("Kanban Board", () => {
 		await dialog.getByRole("button", { name: "Save Changes" }).click();
 		await expect(dialog).not.toBeVisible();
 
-		await expect(page.getByText("Updated Episode Title")).toBeVisible();
+		await expect(planningColumn.getByText("Updated Episode Title")).toBeVisible();
 	});
 
 	test("closes the create modal with Cancel button", async ({ page }) => {
@@ -94,18 +96,20 @@ test.describe("Kanban Board", () => {
 	});
 
 	test("deletes an episode via the detail modal", async ({ page }) => {
-		await page.getByText("Interview Techniques for Hosts").click();
+		const planningColumn = page.getByLabel("Planning column");
+		await planningColumn.getByRole("button", { name: /Interview Techniques for Hosts/ }).click();
 
 		const dialog = page.getByRole("dialog");
 		await dialog.getByRole("button", { name: "Delete" }).click();
 		await dialog.getByRole("button", { name: "Confirm Delete" }).click();
 
 		await expect(dialog).not.toBeVisible();
-		await expect(page.getByText("Interview Techniques for Hosts")).not.toBeVisible();
+		await expect(planningColumn.getByText("Interview Techniques for Hosts")).not.toBeVisible();
 	});
 
 	test("shows status badge with correct label in detail modal", async ({ page }) => {
-		await page.getByText("Remote Recording Best Practices").click();
+		const guestColumn = page.getByLabel("Guest Coordination column");
+		await guestColumn.getByRole("button", { name: /Remote Recording Best Practices/ }).click();
 
 		const dialog = page.getByRole("dialog");
 		await expect(dialog.getByText("Guest Coordination")).toBeVisible();

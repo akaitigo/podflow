@@ -3,7 +3,7 @@ import type { CreateEpisodeInput } from "../types/episode";
 import styles from "./Modal.module.css";
 
 interface CreateEpisodeModalProps {
-	readonly onSubmit: (input: CreateEpisodeInput) => void;
+	readonly onSubmit: (input: CreateEpisodeInput) => void | Promise<void>;
 	readonly onClose: () => void;
 }
 

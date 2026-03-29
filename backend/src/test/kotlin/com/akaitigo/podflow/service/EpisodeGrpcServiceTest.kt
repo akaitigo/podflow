@@ -162,6 +162,19 @@ class EpisodeGrpcServiceTest {
     }
 
     @Test
+    fun `listEpisodes caps page size at 100`() {
+        createTestEpisode("Capped Episode")
+
+        val request = ListEpisodesRequest.newBuilder()
+            .setPageSize(200)
+            .build()
+
+        val response = client.listEpisodes(request).await().indefinitely()
+        // Should not crash; result count is capped at MAX_PAGE_SIZE
+        assertTrue(response.episodesList.size <= 100)
+    }
+
+    @Test
     fun `listEpisodes with status filter`() {
         val episode = createTestEpisode("Filtered Episode")
 
@@ -328,6 +341,43 @@ class EpisodeGrpcServiceTest {
         }
         assertEquals(io.grpc.Status.INVALID_ARGUMENT.code, exception.status.code)
         assertTrue(requireNotNull(exception.status.description).contains("audio_url"))
+    }
+
+    @Test
+    fun `updateEpisode with http audio_url fails`() {
+        val created = createTestEpisode("HTTP Audio URL Test")
+
+        val updatedProto = ProtoEpisode.newBuilder()
+            .setId(created.id)
+            .setAudioUrl("http://insecure.example.com/audio.mp3")
+            .build()
+
+        val request = UpdateEpisodeRequest.newBuilder()
+            .setEpisode(updatedProto)
+            .build()
+
+        val exception = assertThrows<StatusRuntimeException> {
+            client.updateEpisode(request).await().indefinitely()
+        }
+        assertEquals(io.grpc.Status.INVALID_ARGUMENT.code, exception.status.code)
+        assertTrue(requireNotNull(exception.status.description).contains("https"))
+    }
+
+    @Test
+    fun `updateEpisode with valid https audio_url succeeds`() {
+        val created = createTestEpisode("HTTPS Audio URL Test")
+
+        val updatedProto = ProtoEpisode.newBuilder()
+            .setId(created.id)
+            .setAudioUrl("https://cdn.example.com/audio.mp3")
+            .build()
+
+        val request = UpdateEpisodeRequest.newBuilder()
+            .setEpisode(updatedProto)
+            .build()
+
+        val response = client.updateEpisode(request).await().indefinitely()
+        assertEquals("https://cdn.example.com/audio.mp3", response.episode.audioUrl)
     }
 
     @Test

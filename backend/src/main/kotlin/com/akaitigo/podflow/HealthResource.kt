@@ -8,10 +8,9 @@ import jakarta.ws.rs.core.MediaType
 import javax.sql.DataSource
 
 @Path("/health")
-class HealthResource {
-
-    @Inject
-    lateinit var dataSource: DataSource
+class HealthResource @Inject constructor(
+    private val dataSource: DataSource,
+) {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)

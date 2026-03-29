@@ -29,16 +29,11 @@ import com.akaitigo.podflow.grpc.EpisodeStatus as ProtoEpisodeStatus
 /** gRPC service implementing Episode CRUD operations. */
 @GrpcService
 @Blocking
-class EpisodeGrpcService : EpisodeService {
-
-    @Inject
-    lateinit var episodeRepository: EpisodeRepository
-
-    @Inject
-    lateinit var guestRepository: GuestRepository
-
-    @Inject
-    lateinit var episodeMapper: EpisodeMapper
+class EpisodeGrpcService @Inject constructor(
+    private val episodeRepository: EpisodeRepository,
+    private val guestRepository: GuestRepository,
+    private val episodeMapper: EpisodeMapper,
+) : EpisodeService {
 
     @Transactional
     override fun createEpisode(request: CreateEpisodeRequest): Uni<CreateEpisodeResponse> =
@@ -81,7 +76,11 @@ class EpisodeGrpcService : EpisodeService {
 
     override fun listEpisodes(request: ListEpisodesRequest): Uni<ListEpisodesResponse> =
         Uni.createFrom().item {
-            val pageSize = if (request.pageSize > 0) { request.pageSize } else { DEFAULT_PAGE_SIZE }
+            val pageSize = when {
+                request.pageSize <= 0 -> DEFAULT_PAGE_SIZE
+                request.pageSize > MAX_PAGE_SIZE -> MAX_PAGE_SIZE
+                else -> request.pageSize
+            }
             val offset = parsePageToken(request.pageToken)
 
             val hasStatusFilter =
@@ -90,9 +89,9 @@ class EpisodeGrpcService : EpisodeService {
 
             val query = if (hasStatusFilter) {
                 val modelStatus = episodeMapper.toModelStatus(request.statusFilter)
-                episodeRepository.find("status", modelStatus)
+                episodeRepository.find("status = ?1 order by createdAt desc", modelStatus)
             } else {
-                episodeRepository.findAll()
+                episodeRepository.find("order by createdAt desc")
             }
 
             val episodes = query.page(offset, pageSize).list()
@@ -245,6 +244,7 @@ class EpisodeGrpcService : EpisodeService {
 
     companion object {
         private const val DEFAULT_PAGE_SIZE = 20
+        private const val MAX_PAGE_SIZE = 100
         private const val MAX_TITLE_LENGTH = 500
 
         fun validateTitle(title: String) {
@@ -263,11 +263,23 @@ class EpisodeGrpcService : EpisodeService {
         }
 
         fun validateAudioUrl(url: String) {
-            if (!url.startsWith("https://") && !url.startsWith("http://")) {
+            val parsed = try {
+                java.net.URI(url)
+            } catch (_: java.net.URISyntaxException) {
                 throw StatusRuntimeException(
                     Status.INVALID_ARGUMENT.withDescription(
-                        "audio_url must be a valid HTTP(S) URL",
+                        "audio_url must be a valid URL",
                     ),
+                )
+            }
+            val reason = when {
+                parsed.scheme != "https" -> "audio_url must use https scheme"
+                parsed.host.isNullOrBlank() -> "audio_url must have a valid host"
+                else -> null
+            }
+            if (reason != null) {
+                throw StatusRuntimeException(
+                    Status.INVALID_ARGUMENT.withDescription(reason),
                 )
             }
         }

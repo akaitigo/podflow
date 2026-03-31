@@ -6,6 +6,7 @@ import com.akaitigo.podflow.grpc.EpisodeService
 import com.akaitigo.podflow.grpc.GetEpisodeRequest
 import com.akaitigo.podflow.grpc.ListEpisodesRequest
 import com.akaitigo.podflow.grpc.UpdateEpisodeRequest
+import com.google.protobuf.FieldMask
 import com.akaitigo.podflow.model.Guest
 import com.akaitigo.podflow.repository.GuestRepository
 import io.grpc.StatusRuntimeException
@@ -509,6 +510,28 @@ class EpisodeGrpcServiceTest {
 
         val response = transitionTo(created.id, ProtoEpisodeStatus.EPISODE_STATUS_REVIEW)
         assertEquals(ProtoEpisodeStatus.EPISODE_STATUS_REVIEW, response.episode.status)
+    }
+
+    @Test
+    fun `updateEpisode with mask clears guest when guest_id is empty`() {
+        val guest = createTestGuest()
+
+        val createRequest = CreateEpisodeRequest.newBuilder()
+            .setTitle("Guest Clear Test")
+            .setGuestId(requireNotNull(guest.id).toString())
+            .build()
+        val created = client.createEpisode(createRequest).await().indefinitely().episode
+        assertEquals(requireNotNull(guest.id).toString(), created.guestId)
+
+        val clearProto = ProtoEpisode.newBuilder()
+            .setId(created.id)
+            .build()
+        val clearRequest = UpdateEpisodeRequest.newBuilder()
+            .setEpisode(clearProto)
+            .setUpdateMask(FieldMask.newBuilder().addPaths("guest_id").build())
+            .build()
+        val cleared = client.updateEpisode(clearRequest).await().indefinitely().episode
+        assertEquals("", cleared.guestId)
     }
 
     @Test

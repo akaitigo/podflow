@@ -173,7 +173,7 @@ class EpisodeGrpcService @Inject constructor(
                 }
                 "show_notes" -> existing.showNotes = proto.showNotes.ifEmpty { null }
                 "status" -> applyStatusUpdate(existing, proto)
-                "guest_id" -> applyGuestUpdate(existing, proto)
+                "guest_id" -> applyGuestUpdate(existing, proto, clearOnEmpty = true)
                 else -> throw StatusRuntimeException(
                     Status.INVALID_ARGUMENT.withDescription(
                         "Unknown update_mask path: $path",
@@ -221,6 +221,7 @@ class EpisodeGrpcService @Inject constructor(
     private fun applyGuestUpdate(
         existing: Episode,
         proto: com.akaitigo.podflow.grpc.Episode,
+        clearOnEmpty: Boolean = false,
     ) {
         if (proto.guestId.isNotEmpty()) {
             val guestId = parseUuid(proto.guestId, "guest_id")
@@ -229,6 +230,8 @@ class EpisodeGrpcService @Inject constructor(
                     Status.NOT_FOUND.withDescription("Guest not found: ${proto.guestId}"),
                 )
             existing.guest = guest
+        } else if (clearOnEmpty) {
+            existing.guest = null
         }
     }
 

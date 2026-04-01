@@ -13,8 +13,8 @@ plugins:
     opt:
       - lite
 
-  # TypeScript Connect (gRPC-Web)
-  - remote: buf.build/connectrpc/es
+  # TypeScript protobuf messages + Connect service definitions (protoc-gen-es v2)
+  - local: ["pnpm", "--dir", "../frontend", "exec", "protoc-gen-es"]
     out: ../frontend/src/gen
     opt:
       - target=ts

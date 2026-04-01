@@ -67,3 +67,12 @@ val syncProto by tasks.registering(Sync::class) {
 tasks.named("processResources") {
     dependsOn(syncProto)
 }
+
+// Remove stale Quarkus-generated gRPC sources from src/main/java/ during clean.
+// Quarkus code generation writes output to build/, but older runs or version
+// mismatches can leave protobuf-lite artefacts under src/main/java/ that shadow
+// the correct full-protobuf classes in build/. Deleting them prevents
+// NoSuchMethodError at test time (GeneratedMessageLite vs GeneratedMessageV3).
+tasks.named<Delete>("clean") {
+    delete("$projectDir/src/main/java")
+}

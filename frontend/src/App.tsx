@@ -22,31 +22,48 @@ function App() {
 
 	const handleStatusChange = useCallback(
 		(episodeId: string, newStatus: EpisodeStatus) => {
-			updateEpisode({ id: episodeId, status: newStatus });
+			updateEpisode({ id: episodeId, status: newStatus }).catch(() => {
+				// Error state is already set by useEpisodes reducer
+			});
 		},
 		[updateEpisode],
 	);
 
 	const handleCreateSubmit = useCallback(
 		async (input: CreateEpisodeInput) => {
-			await createEpisode(input);
-			setShowCreateModal(false);
+			try {
+				await createEpisode(input);
+				setShowCreateModal(false);
+			} catch {
+				// Error state is already set by useEpisodes reducer.
+				// Keep modal open so the user can see the error and retry.
+			}
 		},
 		[createEpisode],
 	);
 
 	const handleSaveDetail = useCallback(
 		async (input: UpdateEpisodeInput) => {
-			await updateEpisode(input);
-			setSelectedEpisode(null);
+			try {
+				await updateEpisode(input);
+				setSelectedEpisode(null);
+			} catch {
+				// Error state is already set by useEpisodes reducer.
+				// Keep detail modal open so the user can see the error and retry.
+			}
 		},
 		[updateEpisode],
 	);
 
 	const handleDeleteEpisode = useCallback(
 		async (id: string) => {
-			await deleteEpisode(id);
-			setSelectedEpisode(null);
+			try {
+				await deleteEpisode(id);
+				setSelectedEpisode(null);
+			} catch {
+				// Error state is already set by useEpisodes reducer.
+				// Keep detail modal open so the user can see the error and retry.
+			}
 		},
 		[deleteEpisode],
 	);

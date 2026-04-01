@@ -90,6 +90,7 @@ export function useEpisodes(api: EpisodeApi): UseEpisodesResult {
 			} catch (err: unknown) {
 				const message = err instanceof Error ? err.message : "Failed to create episode";
 				dispatch({ type: "FETCH_ERROR", error: message });
+				throw err;
 			}
 		},
 		[api],
@@ -103,6 +104,7 @@ export function useEpisodes(api: EpisodeApi): UseEpisodesResult {
 			} catch (err: unknown) {
 				const message = err instanceof Error ? err.message : "Failed to update episode";
 				dispatch({ type: "FETCH_ERROR", error: message });
+				throw err;
 			}
 		},
 		[api],
@@ -116,6 +118,7 @@ export function useEpisodes(api: EpisodeApi): UseEpisodesResult {
 			} catch (err: unknown) {
 				const message = err instanceof Error ? err.message : "Failed to delete episode";
 				dispatch({ type: "FETCH_ERROR", error: message });
+				throw err;
 			}
 		},
 		[api],

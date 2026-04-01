@@ -11,6 +11,7 @@ frontend/*.tsbuildinfo
 frontend/src/gen/
 backend/build/
 backend/.gradle/
+backend/src/main/java/
 
 # IDE
 .idea/

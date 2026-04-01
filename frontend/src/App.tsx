@@ -8,12 +8,11 @@ import headerStyles from "./components/Header.module.css";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { useEpisodes } from "./hooks/useEpisodes";
 import { useIsMobile } from "./hooks/useMediaQuery";
-import { createMockApi } from "./lib/api";
-import { MOCK_EPISODES } from "./lib/mock-data";
+import { createApiClient } from "./lib/api-factory";
 import type { CreateEpisodeInput, Episode, EpisodeStatus, UpdateEpisodeInput } from "./types/episode";
 
 function App() {
-	const api = useMemo(() => createMockApi([...MOCK_EPISODES]), []);
+	const api = useMemo(() => createApiClient(), []);
 	const { episodes, loading, error, createEpisode, updateEpisode, deleteEpisode, clearError } = useEpisodes(api);
 
 	const isMobile = useIsMobile();

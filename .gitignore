@@ -6,6 +6,9 @@ node_modules/
 frontend/dist/
 frontend/src/**/*.js
 frontend/*.tsbuildinfo
+
+# Generated protobuf/gRPC code
+frontend/src/gen/
 backend/build/
 backend/.gradle/
 

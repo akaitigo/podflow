@@ -24,6 +24,10 @@ import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import com.akaitigo.podflow.grpc.EpisodeStatus as ProtoEpisodeStatus
 
 /** gRPC service implementing Episode CRUD operations. */
@@ -284,18 +288,49 @@ class EpisodeGrpcService @Inject constructor(
             rejectPrivateHost(parsed.host)
         }
 
+        /** DNS resolution timeout in seconds to prevent thread starvation from slow/malicious DNS. */
+        private const val DNS_TIMEOUT_SECONDS = 5L
+
         private fun rejectPrivateHost(host: String) {
-            val resolved = try {
-                java.net.InetAddress.getByName(host)
-            } catch (_: java.net.UnknownHostException) {
-                throw StatusRuntimeException(
-                    Status.INVALID_ARGUMENT.withDescription("audio_url host cannot be resolved: $host"),
-                )
-            }
+            val resolved = resolveHostOrThrow(host)
             if (isNonRoutableAddress(resolved)) {
                 throw StatusRuntimeException(
                     Status.INVALID_ARGUMENT.withDescription("audio_url must not point to a private/local address"),
                 )
+            }
+        }
+
+        private fun resolveHostOrThrow(host: String): java.net.InetAddress =
+            try {
+                resolveDnsWithTimeout(host, DNS_TIMEOUT_SECONDS)
+            } catch (_: java.net.UnknownHostException) {
+                throw StatusRuntimeException(
+                    Status.INVALID_ARGUMENT.withDescription("audio_url host cannot be resolved: $host"),
+                )
+            } catch (_: TimeoutException) {
+                throw StatusRuntimeException(
+                    Status.DEADLINE_EXCEEDED.withDescription(
+                        "audio_url host DNS resolution timed out: $host",
+                    ),
+                )
+            }
+
+        /**
+         * Resolve a hostname with a timeout to prevent blocking threads
+         * indefinitely on slow or unresponsive DNS servers.
+         */
+        private fun resolveDnsWithTimeout(
+            host: String,
+            timeoutSeconds: Long,
+        ): java.net.InetAddress {
+            val executor = Executors.newSingleThreadExecutor()
+            try {
+                val future = executor.submit(
+                    Callable { java.net.InetAddress.getByName(host) },
+                )
+                return future.get(timeoutSeconds, TimeUnit.SECONDS)
+            } finally {
+                executor.shutdownNow()
             }
         }
 

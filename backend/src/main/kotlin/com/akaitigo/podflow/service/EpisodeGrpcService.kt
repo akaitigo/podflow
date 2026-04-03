@@ -43,6 +43,7 @@ class EpisodeGrpcService @Inject constructor(
     override fun createEpisode(request: CreateEpisodeRequest): Uni<CreateEpisodeResponse> =
         Uni.createFrom().item {
             validateTitle(request.title)
+            validateFieldLength(request.description, "description", MAX_DESCRIPTION_LENGTH)
 
             val episode = Episode().apply {
                 title = request.title
@@ -168,14 +169,20 @@ class EpisodeGrpcService @Inject constructor(
                     validateTitle(proto.title)
                     existing.title = proto.title
                 }
-                "description" -> existing.description = proto.description.ifEmpty { null }
+                "description" -> {
+                    validateFieldLength(proto.description, "description", MAX_DESCRIPTION_LENGTH)
+                    existing.description = proto.description.ifEmpty { null }
+                }
                 "audio_url" -> {
                     if (proto.audioUrl.isNotEmpty()) {
                         validateAudioUrl(proto.audioUrl)
                     }
                     existing.audioUrl = proto.audioUrl.ifEmpty { null }
                 }
-                "show_notes" -> existing.showNotes = proto.showNotes.ifEmpty { null }
+                "show_notes" -> {
+                    validateFieldLength(proto.showNotes, "show_notes", MAX_SHOW_NOTES_LENGTH)
+                    existing.showNotes = proto.showNotes.ifEmpty { null }
+                }
                 "status" -> applyStatusUpdate(existing, proto)
                 "guest_id" -> applyGuestUpdate(existing, proto, clearOnEmpty = true)
                 else -> throw StatusRuntimeException(
@@ -195,12 +202,18 @@ class EpisodeGrpcService @Inject constructor(
             validateTitle(proto.title)
             existing.title = proto.title
         }
-        existing.description = proto.description.ifEmpty { null }
+        if (proto.description.isNotEmpty()) {
+            validateFieldLength(proto.description, "description", MAX_DESCRIPTION_LENGTH)
+            existing.description = proto.description
+        }
         if (proto.audioUrl.isNotEmpty()) {
             validateAudioUrl(proto.audioUrl)
+            existing.audioUrl = proto.audioUrl
         }
-        existing.audioUrl = proto.audioUrl.ifEmpty { null }
-        existing.showNotes = proto.showNotes.ifEmpty { null }
+        if (proto.showNotes.isNotEmpty()) {
+            validateFieldLength(proto.showNotes, "show_notes", MAX_SHOW_NOTES_LENGTH)
+            existing.showNotes = proto.showNotes
+        }
     }
 
     private fun applyStatusUpdate(
@@ -249,6 +262,8 @@ class EpisodeGrpcService @Inject constructor(
         private const val DEFAULT_PAGE_SIZE = 20
         private const val MAX_PAGE_SIZE = 100
         private const val MAX_TITLE_LENGTH = 500
+        private const val MAX_DESCRIPTION_LENGTH = 50_000
+        private const val MAX_SHOW_NOTES_LENGTH = 50_000
 
         fun validateTitle(title: String) {
             if (title.isBlank()) {
@@ -260,6 +275,16 @@ class EpisodeGrpcService @Inject constructor(
                 throw StatusRuntimeException(
                     Status.INVALID_ARGUMENT.withDescription(
                         "Title must not exceed $MAX_TITLE_LENGTH characters",
+                    ),
+                )
+            }
+        }
+
+        fun validateFieldLength(value: String, fieldName: String, maxLength: Int) {
+            if (value.length > maxLength) {
+                throw StatusRuntimeException(
+                    Status.INVALID_ARGUMENT.withDescription(
+                        "$fieldName must not exceed $maxLength characters",
                     ),
                 )
             }
@@ -315,6 +340,10 @@ class EpisodeGrpcService @Inject constructor(
                 )
             }
 
+        private val dnsExecutor = Executors.newSingleThreadExecutor { runnable ->
+            Thread(runnable, "dns-resolver").apply { isDaemon = true }
+        }
+
         /**
          * Resolve a hostname with a timeout to prevent blocking threads
          * indefinitely on slow or unresponsive DNS servers.
@@ -323,15 +352,10 @@ class EpisodeGrpcService @Inject constructor(
             host: String,
             timeoutSeconds: Long,
         ): java.net.InetAddress {
-            val executor = Executors.newSingleThreadExecutor()
-            try {
-                val future = executor.submit(
-                    Callable { java.net.InetAddress.getByName(host) },
-                )
-                return future.get(timeoutSeconds, TimeUnit.SECONDS)
-            } finally {
-                executor.shutdownNow()
-            }
+            val future = dnsExecutor.submit(
+                Callable { java.net.InetAddress.getByName(host) },
+            )
+            return future.get(timeoutSeconds, TimeUnit.SECONDS)
         }
 
         private fun isNonRoutableAddress(address: java.net.InetAddress): Boolean =

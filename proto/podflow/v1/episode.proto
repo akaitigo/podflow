@@ -51,6 +51,8 @@ message Episode {
   EpisodeStatus status = 4;
   // Identifier of the associated guest.
   string guest_id = 5;
+  // Display name of the associated guest (read-only, populated by server).
+  string guest_name = 11;
   // URL to the audio file.
   string audio_url = 6;
   // Show notes in markdown format.

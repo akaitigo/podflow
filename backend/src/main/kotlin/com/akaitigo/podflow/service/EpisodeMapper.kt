@@ -22,7 +22,10 @@ class EpisodeMapper {
             .setShowNotes(entity.showNotes.orEmpty())
 
         entity.id?.let { builder.setId(it.toString()) }
-        entity.guest?.id?.let { builder.setGuestId(it.toString()) }
+        entity.guest?.let { guest ->
+            guest.id?.let { builder.setGuestId(it.toString()) }
+            builder.setGuestName(guest.name)
+        }
         entity.publishedAt?.let { builder.setPublishedAt(toTimestamp(it)) }
         entity.createdAt.let { builder.setCreatedAt(toTimestamp(it)) }
         entity.updatedAt.let { builder.setUpdatedAt(toTimestamp(it)) }

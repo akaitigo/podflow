@@ -87,6 +87,19 @@ class EpisodeGrpcServiceTest {
     }
 
     @Test
+    fun `createEpisode with guest populates guest_name`() {
+        val guest = createTestGuest()
+
+        val request = CreateEpisodeRequest.newBuilder()
+            .setTitle("Guest Name Episode")
+            .setGuestId(requireNotNull(guest.id).toString())
+            .build()
+
+        val response = client.createEpisode(request).await().indefinitely()
+        assertEquals("Test Guest", response.episode.guestName)
+    }
+
+    @Test
     fun `createEpisode with nonexistent guest fails`() {
         val request = CreateEpisodeRequest.newBuilder()
             .setTitle("Guest Episode")
@@ -422,7 +435,34 @@ class EpisodeGrpcServiceTest {
     }
 
     @Test
-    fun `updateEpisode without mask clears optional fields with empty string`() {
+    fun `updateEpisode without mask preserves optional fields when omitted`() {
+        val created = createTestEpisode("Preserve Fields Test")
+
+        // First set description
+        val withDesc = ProtoEpisode.newBuilder()
+            .setId(created.id)
+            .setDescription("Some description")
+            .build()
+        val setRequest = UpdateEpisodeRequest.newBuilder()
+            .setEpisode(withDesc)
+            .build()
+        val setResponse = client.updateEpisode(setRequest).await().indefinitely()
+        assertEquals("Some description", setResponse.episode.description)
+
+        // Update without mask and empty description -> should preserve existing value
+        val updateProto = ProtoEpisode.newBuilder()
+            .setId(created.id)
+            .setTitle("Preserve Fields Test")
+            .build()
+        val updateRequest = UpdateEpisodeRequest.newBuilder()
+            .setEpisode(updateProto)
+            .build()
+        val updateResponse = client.updateEpisode(updateRequest).await().indefinitely()
+        assertEquals("Some description", updateResponse.episode.description)
+    }
+
+    @Test
+    fun `updateEpisode with mask clears optional fields with empty string`() {
         val created = createTestEpisode("Clear Fields Test")
 
         // First set description
@@ -436,13 +476,13 @@ class EpisodeGrpcServiceTest {
         val setResponse = client.updateEpisode(setRequest).await().indefinitely()
         assertEquals("Some description", setResponse.episode.description)
 
-        // Now update without mask and empty description -> should clear it
+        // Clear description via update_mask
         val clearProto = ProtoEpisode.newBuilder()
             .setId(created.id)
-            .setTitle("Clear Fields Test")
             .build()
         val clearRequest = UpdateEpisodeRequest.newBuilder()
             .setEpisode(clearProto)
+            .setUpdateMask(FieldMask.newBuilder().addPaths("description").build())
             .build()
         val clearResponse = client.updateEpisode(clearRequest).await().indefinitely()
         assertEquals("", clearResponse.episode.description)

@@ -51,7 +51,7 @@ function toFrontendEpisode(proto: ProtoEpisode): Episode {
 		description: proto.description,
 		status: PROTO_TO_STATUS[proto.status] ?? "PLANNING",
 		guestId: proto.guestId,
-		guestName: "",
+		guestName: proto.guestName || (proto.guestId ? "ゲスト" : ""),
 		audioUrl: proto.audioUrl,
 		showNotes: proto.showNotes,
 		publishedAt: timestampToIso(proto.publishedAt),
@@ -71,9 +71,19 @@ export function createGrpcApi(baseUrl: string): EpisodeApi {
 
 	return {
 		async listEpisodes(): Promise<readonly Episode[]> {
-			const request = create(ListEpisodesRequestSchema, {});
-			const response = await client.listEpisodes(request);
-			return response.episodes.map(toFrontendEpisode);
+			const allEpisodes: Episode[] = [];
+			let pageToken = "";
+			do {
+				const request = create(ListEpisodesRequestSchema, {
+					pageToken,
+				});
+				const response = await client.listEpisodes(request);
+				for (const ep of response.episodes) {
+					allEpisodes.push(toFrontendEpisode(ep));
+				}
+				pageToken = response.nextPageToken;
+			} while (pageToken !== "");
+			return allEpisodes;
 		},
 
 		async createEpisode(input): Promise<Episode> {

@@ -20,6 +20,7 @@ import io.grpc.StatusRuntimeException
 import io.quarkus.grpc.GrpcService
 import io.smallrye.common.annotation.Blocking
 import io.smallrye.mutiny.Uni
+import jakarta.annotation.PreDestroy
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import java.time.Instant
@@ -38,6 +39,11 @@ class EpisodeGrpcService @Inject constructor(
     private val guestRepository: GuestRepository,
     private val episodeMapper: EpisodeMapper,
 ) : EpisodeService {
+
+    @PreDestroy
+    fun shutdown() {
+        dnsExecutor.shutdown()
+    }
 
     @Transactional
     override fun createEpisode(request: CreateEpisodeRequest): Uni<CreateEpisodeResponse> =

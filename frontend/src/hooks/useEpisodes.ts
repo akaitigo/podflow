@@ -15,6 +15,7 @@ type EpisodesAction =
 	| { readonly type: "ADD_EPISODE"; readonly episode: Episode }
 	| { readonly type: "UPDATE_EPISODE"; readonly episode: Episode }
 	| { readonly type: "DELETE_EPISODE"; readonly id: string }
+	| { readonly type: "SET_ERROR"; readonly error: string }
 	| { readonly type: "CLEAR_ERROR" };
 
 function episodesReducer(state: EpisodesState, action: EpisodesAction): EpisodesState {
@@ -25,6 +26,8 @@ function episodesReducer(state: EpisodesState, action: EpisodesAction): Episodes
 			return { episodes: action.episodes, loading: false, error: null };
 		case "FETCH_ERROR":
 			return { ...state, loading: false, error: action.error };
+		case "SET_ERROR":
+			return { ...state, error: action.error };
 		case "ADD_EPISODE":
 			return { ...state, episodes: [...state.episodes, action.episode] };
 		case "UPDATE_EPISODE":
@@ -89,7 +92,7 @@ export function useEpisodes(api: EpisodeApi): UseEpisodesResult {
 				dispatch({ type: "ADD_EPISODE", episode });
 			} catch (err: unknown) {
 				const message = err instanceof Error ? err.message : "Failed to create episode";
-				dispatch({ type: "FETCH_ERROR", error: message });
+				dispatch({ type: "SET_ERROR", error: message });
 				throw err;
 			}
 		},
@@ -103,7 +106,7 @@ export function useEpisodes(api: EpisodeApi): UseEpisodesResult {
 				dispatch({ type: "UPDATE_EPISODE", episode });
 			} catch (err: unknown) {
 				const message = err instanceof Error ? err.message : "Failed to update episode";
-				dispatch({ type: "FETCH_ERROR", error: message });
+				dispatch({ type: "SET_ERROR", error: message });
 				throw err;
 			}
 		},
@@ -117,7 +120,7 @@ export function useEpisodes(api: EpisodeApi): UseEpisodesResult {
 				dispatch({ type: "DELETE_EPISODE", id });
 			} catch (err: unknown) {
 				const message = err instanceof Error ? err.message : "Failed to delete episode";
-				dispatch({ type: "FETCH_ERROR", error: message });
+				dispatch({ type: "SET_ERROR", error: message });
 				throw err;
 			}
 		},

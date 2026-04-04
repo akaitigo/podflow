@@ -137,7 +137,7 @@ class EpisodeGrpcService @Inject constructor(
                 applyGuestUpdate(existing, protoEpisode)
             }
 
-            existing.updatedAt = Instant.now()
+            // updatedAt is set automatically by @PreUpdate on the entity
             episodeRepository.persistAndFlush(existing)
 
             UpdateEpisodeResponse.newBuilder()

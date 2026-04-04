@@ -392,6 +392,8 @@ class EpisodeGrpcService @Inject constructor(
                 )
             }
 
+        private const val MAX_PAGE_INDEX = 10_000
+
         fun parsePageToken(token: String): Int {
             if (token.isEmpty()) {
                 return 0
@@ -401,6 +403,13 @@ class EpisodeGrpcService @Inject constructor(
                 if (page < 0) {
                     throw StatusRuntimeException(
                         Status.INVALID_ARGUMENT.withDescription("page_token must be non-negative"),
+                    )
+                }
+                if (page > MAX_PAGE_INDEX) {
+                    throw StatusRuntimeException(
+                        Status.INVALID_ARGUMENT.withDescription(
+                            "page_token must not exceed $MAX_PAGE_INDEX",
+                        ),
                     )
                 }
                 page

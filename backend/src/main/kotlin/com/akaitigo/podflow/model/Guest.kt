@@ -2,6 +2,7 @@ package com.akaitigo.podflow.model
 
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
 import jakarta.persistence.Column
+import jakarta.persistence.Convert
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -30,9 +31,10 @@ class Guest : PanacheEntityBase {
     @Column(name = "bio", columnDefinition = "TEXT")
     var bio: String? = null
 
-    /** Social media profile URLs stored as JSON array. */
+    /** Social media profile URLs stored as a JSON array. */
+    @Convert(converter = SocialLinkListConverter::class)
     @Column(name = "social_links", columnDefinition = "TEXT")
-    var socialLinks: String? = null
+    var socialLinks: List<SocialLink> = emptyList()
 
     @Column(name = "created_at", nullable = false, updatable = false)
     var createdAt: Instant = Instant.now()

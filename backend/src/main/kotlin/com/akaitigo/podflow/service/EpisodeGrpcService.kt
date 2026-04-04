@@ -20,15 +20,10 @@ import io.grpc.StatusRuntimeException
 import io.quarkus.grpc.GrpcService
 import io.smallrye.common.annotation.Blocking
 import io.smallrye.mutiny.Uni
-import jakarta.annotation.PreDestroy
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.Callable
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 import com.akaitigo.podflow.grpc.EpisodeStatus as ProtoEpisodeStatus
 
 /** gRPC service implementing Episode CRUD operations. */
@@ -38,12 +33,8 @@ class EpisodeGrpcService @Inject constructor(
     private val episodeRepository: EpisodeRepository,
     private val guestRepository: GuestRepository,
     private val episodeMapper: EpisodeMapper,
+    private val audioUrlValidator: AudioUrlValidator,
 ) : EpisodeService {
-
-    @PreDestroy
-    fun shutdown() {
-        dnsExecutor.shutdown()
-    }
 
     @Transactional
     override fun createEpisode(request: CreateEpisodeRequest): Uni<CreateEpisodeResponse> =
@@ -100,14 +91,12 @@ class EpisodeGrpcService @Inject constructor(
                 request.statusFilter != ProtoEpisodeStatus.EPISODE_STATUS_UNSPECIFIED &&
                     request.statusFilter != ProtoEpisodeStatus.UNRECOGNIZED
 
-            val query = if (hasStatusFilter) {
+            val episodes = if (hasStatusFilter) {
                 val modelStatus = episodeMapper.toModelStatus(request.statusFilter)
-                episodeRepository.find("status = ?1 order by createdAt desc", modelStatus)
+                episodeRepository.listByStatusWithGuest(modelStatus, offset, pageSize)
             } else {
-                episodeRepository.find("order by createdAt desc")
+                episodeRepository.listWithGuest(offset, pageSize)
             }
-
-            val episodes = query.page(offset, pageSize).list()
 
             val builder = ListEpisodesResponse.newBuilder()
             episodes.forEach { builder.addEpisodes(episodeMapper.toProto(it)) }
@@ -265,13 +254,16 @@ class EpisodeGrpcService @Inject constructor(
                 Status.NOT_FOUND.withDescription("Episode not found: $id"),
             )
 
+    private fun validateAudioUrl(url: String) {
+        audioUrlValidator.validate(url)
+    }
+
     companion object {
         private const val DEFAULT_PAGE_SIZE = 20
         private const val MAX_PAGE_SIZE = 100
         private const val MAX_TITLE_LENGTH = 500
         private const val MAX_DESCRIPTION_LENGTH = 50_000
         private const val MAX_SHOW_NOTES_LENGTH = 50_000
-        private const val MAX_AUDIO_URL_LENGTH = 2048
 
         fun validateTitle(title: String) {
             if (title.isBlank()) {
@@ -297,81 +289,6 @@ class EpisodeGrpcService @Inject constructor(
                 )
             }
         }
-
-        fun validateAudioUrl(url: String) {
-            validateFieldLength(url, "audio_url", MAX_AUDIO_URL_LENGTH)
-            val parsed = try {
-                java.net.URI(url)
-            } catch (_: java.net.URISyntaxException) {
-                throw StatusRuntimeException(
-                    Status.INVALID_ARGUMENT.withDescription(
-                        "audio_url must be a valid URL",
-                    ),
-                )
-            }
-            val reason = when {
-                parsed.scheme != "https" -> "audio_url must use https scheme"
-                parsed.host.isNullOrBlank() -> "audio_url must have a valid host"
-                else -> null
-            }
-            if (reason != null) {
-                throw StatusRuntimeException(
-                    Status.INVALID_ARGUMENT.withDescription(reason),
-                )
-            }
-            rejectPrivateHost(parsed.host)
-        }
-
-        /** DNS resolution timeout in seconds to prevent thread starvation from slow/malicious DNS. */
-        private const val DNS_TIMEOUT_SECONDS = 5L
-
-        private fun rejectPrivateHost(host: String) {
-            val resolved = resolveHostOrThrow(host)
-            if (isNonRoutableAddress(resolved)) {
-                throw StatusRuntimeException(
-                    Status.INVALID_ARGUMENT.withDescription("audio_url must not point to a private/local address"),
-                )
-            }
-        }
-
-        private fun resolveHostOrThrow(host: String): java.net.InetAddress =
-            try {
-                resolveDnsWithTimeout(host, DNS_TIMEOUT_SECONDS)
-            } catch (_: java.net.UnknownHostException) {
-                throw StatusRuntimeException(
-                    Status.INVALID_ARGUMENT.withDescription("audio_url host cannot be resolved: $host"),
-                )
-            } catch (_: TimeoutException) {
-                throw StatusRuntimeException(
-                    Status.DEADLINE_EXCEEDED.withDescription(
-                        "audio_url host DNS resolution timed out: $host",
-                    ),
-                )
-            }
-
-        private val dnsExecutor = Executors.newSingleThreadExecutor { runnable ->
-            Thread(runnable, "dns-resolver").apply { isDaemon = true }
-        }
-
-        /**
-         * Resolve a hostname with a timeout to prevent blocking threads
-         * indefinitely on slow or unresponsive DNS servers.
-         */
-        private fun resolveDnsWithTimeout(
-            host: String,
-            timeoutSeconds: Long,
-        ): java.net.InetAddress {
-            val future = dnsExecutor.submit(
-                Callable { java.net.InetAddress.getByName(host) },
-            )
-            return future.get(timeoutSeconds, TimeUnit.SECONDS)
-        }
-
-        private fun isNonRoutableAddress(address: java.net.InetAddress): Boolean =
-            address.isLoopbackAddress ||
-                address.isLinkLocalAddress ||
-                address.isSiteLocalAddress ||
-                address.isAnyLocalAddress
 
         fun validateStatusTransition(current: EpisodeStatus, target: EpisodeStatus) {
             if (!current.canTransitionTo(target)) {

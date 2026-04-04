@@ -358,6 +358,27 @@ class EpisodeGrpcServiceTest {
     }
 
     @Test
+    fun `updateEpisode with audio_url exceeding 2048 chars fails`() {
+        val created = createTestEpisode("Audio URL Length Test")
+        val longUrl = "https://" + "a".repeat(2041) + ".com/f"  // 2050 chars total
+
+        val updatedProto = com.akaitigo.podflow.grpc.Episode.newBuilder()
+            .setId(created.id)
+            .setAudioUrl(longUrl)
+            .build()
+
+        val request = UpdateEpisodeRequest.newBuilder()
+            .setEpisode(updatedProto)
+            .build()
+
+        val exception = assertThrows<StatusRuntimeException> {
+            client.updateEpisode(request).await().indefinitely()
+        }
+        assertEquals(io.grpc.Status.INVALID_ARGUMENT.code, exception.status.code)
+        assertTrue(requireNotNull(exception.status.description).contains("2048"))
+    }
+
+    @Test
     fun `updateEpisode with http audio_url fails`() {
         val created = createTestEpisode("HTTP Audio URL Test")
 

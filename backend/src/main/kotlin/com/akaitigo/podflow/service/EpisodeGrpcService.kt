@@ -137,7 +137,7 @@ class EpisodeGrpcService @Inject constructor(
                 applyGuestUpdate(existing, protoEpisode)
             }
 
-            // updatedAt is set automatically by @PreUpdate on the entity
+            existing.updatedAt = Instant.now()
             episodeRepository.persistAndFlush(existing)
 
             UpdateEpisodeResponse.newBuilder()
@@ -270,6 +270,7 @@ class EpisodeGrpcService @Inject constructor(
         private const val MAX_TITLE_LENGTH = 500
         private const val MAX_DESCRIPTION_LENGTH = 50_000
         private const val MAX_SHOW_NOTES_LENGTH = 50_000
+        private const val MAX_AUDIO_URL_LENGTH = 2048
 
         fun validateTitle(title: String) {
             if (title.isBlank()) {
@@ -297,6 +298,7 @@ class EpisodeGrpcService @Inject constructor(
         }
 
         fun validateAudioUrl(url: String) {
+            validateFieldLength(url, "audio_url", MAX_AUDIO_URL_LENGTH)
             val parsed = try {
                 java.net.URI(url)
             } catch (_: java.net.URISyntaxException) {

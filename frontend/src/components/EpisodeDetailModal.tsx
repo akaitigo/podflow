@@ -113,6 +113,7 @@ export function EpisodeDetailModal({ episode, onSave, onDelete, onClose }: Episo
 									type="text"
 									value={title}
 									onChange={(e) => setTitle(e.target.value)}
+									maxLength={500}
 									required
 								/>
 							</div>
@@ -126,6 +127,7 @@ export function EpisodeDetailModal({ episode, onSave, onDelete, onClose }: Episo
 									className={styles.textarea}
 									value={description}
 									onChange={(e) => setDescription(e.target.value)}
+									maxLength={50000}
 									rows={3}
 								/>
 							</div>
@@ -162,6 +164,7 @@ export function EpisodeDetailModal({ episode, onSave, onDelete, onClose }: Episo
 									className={styles.textarea}
 									value={showNotes}
 									onChange={(e) => setShowNotes(e.target.value)}
+									maxLength={50000}
 									rows={6}
 									placeholder="Write show notes in markdown..."
 								/>

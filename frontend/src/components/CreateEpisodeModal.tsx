@@ -69,6 +69,7 @@ export function CreateEpisodeModal({ onSubmit, onClose }: CreateEpisodeModalProp
 									value={title}
 									onChange={(e) => setTitle(e.target.value)}
 									placeholder="Episode title"
+									maxLength={500}
 									required
 								/>
 							</div>
@@ -82,6 +83,7 @@ export function CreateEpisodeModal({ onSubmit, onClose }: CreateEpisodeModalProp
 									value={description}
 									onChange={(e) => setDescription(e.target.value)}
 									placeholder="Brief description of the episode"
+									maxLength={50000}
 									rows={3}
 								/>
 							</div>

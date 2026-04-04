@@ -211,7 +211,7 @@ class EpisodeGrpcService @Inject constructor(
         }
         if (proto.description.isNotEmpty()) {
             validateFieldLength(proto.description, "description", MAX_DESCRIPTION_LENGTH)
-            existing.description = proto.description
+            existing.description = proto.description.ifEmpty { null }
         }
         if (proto.audioUrl.isNotEmpty()) {
             validateAudioUrl(proto.audioUrl)

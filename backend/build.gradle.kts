@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.1.0"
-    kotlin("plugin.allopen") version "2.1.0"
+    kotlin("jvm") version "2.3.10"
+    kotlin("plugin.allopen") version "2.3.10"
     id("io.quarkus") version "3.34.2"
     id("io.gitlab.arturbosch.detekt") version "1.23.8"
 }
@@ -24,6 +24,8 @@ dependencies {
     implementation("io.quarkus:quarkus-rest")
     implementation("io.quarkus:quarkus-rest-jackson")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
+    // Required by Quarkus-generated protobuf Kotlin extension files (*Kt.kt) in protobuf-java 4.x
+    implementation("com.google.protobuf:protobuf-kotlin")
 
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.rest-assured:rest-assured")
@@ -40,8 +42,10 @@ java {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_21.toString()
-    kotlinOptions.javaParameters = true
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        javaParameters.set(true)
+    }
 }
 
 allOpen {

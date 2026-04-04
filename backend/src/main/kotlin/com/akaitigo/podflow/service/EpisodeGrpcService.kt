@@ -75,6 +75,7 @@ class EpisodeGrpcService @Inject constructor(
                 .build()
         }
 
+    @Transactional
     override fun getEpisode(request: GetEpisodeRequest): Uni<GetEpisodeResponse> =
         Uni.createFrom().item {
             val id = parseUuid(request.id, "id")
@@ -85,6 +86,7 @@ class EpisodeGrpcService @Inject constructor(
                 .build()
         }
 
+    @Transactional
     override fun listEpisodes(request: ListEpisodesRequest): Uni<ListEpisodesResponse> =
         Uni.createFrom().item {
             val pageSize = when {
@@ -137,7 +139,6 @@ class EpisodeGrpcService @Inject constructor(
                 applyGuestUpdate(existing, protoEpisode)
             }
 
-            existing.updatedAt = Instant.now()
             episodeRepository.persistAndFlush(existing)
 
             UpdateEpisodeResponse.newBuilder()

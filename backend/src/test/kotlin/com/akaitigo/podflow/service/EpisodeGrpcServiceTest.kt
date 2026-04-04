@@ -696,7 +696,7 @@ class EpisodeGrpcServiceTest {
         assertTrue(requireNotNull(exception.status.description).contains("10000"))
     }
 
-        private fun createTestEpisode(title: String): ProtoEpisode {
+    private fun createTestEpisode(title: String): ProtoEpisode {
         val request = CreateEpisodeRequest.newBuilder()
             .setTitle(title)
             .build()

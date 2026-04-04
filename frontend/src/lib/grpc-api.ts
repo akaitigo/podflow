@@ -34,7 +34,12 @@ const PROTO_TO_STATUS: Record<number, EpisodeStatus> = {
 	[ProtoEpisodeStatus.PUBLISHED]: "PUBLISHED",
 };
 
-/** Convert a protobuf Timestamp to an ISO string, returning null if absent. */
+/**
+ * Convert a protobuf Timestamp to an ISO string, returning null if absent.
+ *
+ * Note: Number(ts.seconds) loses precision for BigInt values > 2^53, which
+ * corresponds to year ~285428. Timestamps in the foreseeable future are safe.
+ */
 function timestampToIso(ts: { seconds: bigint; nanos: number } | undefined): string | null {
 	if (ts === undefined) {
 		return null;

@@ -69,3 +69,76 @@
 | CI失敗 | 0回 |
 | テンプレート実装率 | 80% |
 | 品質チェックリスト | 5/5 |
+
+---
+
+## レビューループ履歴 (2026-04-04)
+
+> Stage: CI修正 + Review Loop (R1〜R5)
+
+### Stage 0: CI修正 (PR 41/42)
+
+| 問題 | 原因 | 修正 |
+|------|------|------|
+| TS2307 生成ファイル欠如 | buf generate がCI未実行、.gitignore で除外 | 生成済み .ts ファイルをコミット、.gitignore を修正 |
+| GitHub workflow スコープ不足 | ci.yml を直接APIで書き込めない | contents APIでuserland修正に限定 |
+
+### R1: Surface Review
+
+| 深刻度 | 指摘 | 修正 |
+|--------|------|------|
+| MEDIUM | createEpisode/updateEpisode/deleteEpisode がエラー時に FETCH_ERROR を dispatch し loading: false に変更 | SET_ERROR アクションを追加 |
+| MEDIUM | updateEpisode の existing.updatedAt = Instant.now() が冗長 (@PreUpdate と重複) | 削除 |
+| LOW | timestampToIso の BigInt 精度制限が未文書 | JSDoc コメントを追記 |
+
+### R2: Implementation Review (PR 43)
+
+| 深刻度 | 指摘 | 修正 |
+|--------|------|------|
+| HIGH | audio_url に DB 制約 2048 文字があるがサービス層で未検証 | validateAudioUrl に長さチェックを追加 |
+| MEDIUM | audio_url 長さチェックが detekt ThrowsCount 違反 | validateFieldLength 呼び出しに委譲 |
+| LOW | .env.example が存在しない | 作成 |
+| TEST | audio_url 2048文字超えテストなし | テスト追加 |
+
+### R3: Design Review (PR 44)
+
+| 深刻度 | 指摘 | 修正 |
+|--------|------|------|
+| CRITICAL | getEpisode/listEpisodes に @Transactional なし。guest lazy-load で LazyInitializationException | @Transactional 追加 |
+| MEDIUM | parsePageToken が Int.MAX_VALUE を受け入れ、Panache page() でInt乗算オーバーフロー | MAX_PAGE_INDEX = 10000 で上限設定 |
+| TEST | ゲスト付きエピソードの lazy-load テスト、pageToken 超過テストなし | テスト追加 |
+
+### R4/R5: Integration + Robustness Review (PR 45)
+
+| 深刻度 | 指摘 | 修正 |
+|--------|------|------|
+| MEDIUM | applyFieldUpdates の description が空文字保存、masked path は null 変換で不整合 | .ifEmpty { null } に統一 |
+| MEDIUM | フロントエンドのフォーム入力に maxLength なし | CreateEpisodeModal/EpisodeDetailModal に maxLength 追加 |
+
+### 残存 LOW 指摘 (対応不要と判断)
+
+| 指摘 | 理由 |
+|------|------|
+| grpc-api.ts のゲスト名フォールバックが日本語ハードコード | 表示上の問題のみ |
+| Offset ページネーションで並行挿入時に重複/欠落 | 既知の設計上の制約、MVPスコープ内 |
+| Guest.socialLinks の JSON TEXT | GuestService 未実装のため到達不可能 |
+| EpisodeMapper.toModelStatus が gRPC Status を知る | レイヤー懸念、実害なし |
+
+### レビューループ数値サマリ
+
+| 指標 | 値 |
+|------|-----|
+| レビューラウンド | 5 (R1〜R5) |
+| 新規 PR | 3 (PR 43, 44, 45) |
+| CI失敗→修正 | 2回 (ThrowsCount 違反 x2) |
+| 修正ファイル数 | 7 |
+| 発見・修正 | CRITICAL: 1, HIGH: 1, MEDIUM: 7, LOW: 3 (コメント対応) |
+| EXIT条件達成 | CRITICAL=0, HIGH=0, MEDIUM=0 |
+
+### テンプレートへの追加改善提案 (レビューループ後)
+
+| 提案 | 内容 |
+|------|------|
+| detekt ThrowsCount パターンの周知 | throw が3個以上になりそうな関数は当初から委譲パターンを使う |
+| @Transactional チェックリスト | gRPC Service メソッドは全て @Transactional を必須とするルールをCLAUDE.mdに追記 |
+| フロントフォームの maxLength | バックエンドの文字数定数をフロントの maxLength と同期する仕組みを設計ルールに追加 |

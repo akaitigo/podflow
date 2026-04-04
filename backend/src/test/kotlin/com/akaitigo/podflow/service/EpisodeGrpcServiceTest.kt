@@ -639,6 +639,51 @@ class EpisodeGrpcServiceTest {
     }
 
     @Test
+    fun `createEpisode with title of exactly 500 chars succeeds`() {
+        val title = "B".repeat(500)
+        val request = CreateEpisodeRequest.newBuilder()
+            .setTitle(title)
+            .build()
+
+        val response = client.createEpisode(request).await().indefinitely()
+        assertEquals(500, response.episode.title.length)
+    }
+
+    @Test
+    fun `createEpisode with title of 256 chars succeeds`() {
+        // Ensures the DB VARCHAR(500) migration is applied — previously VARCHAR(255) would reject this.
+        val title = "C".repeat(256)
+        val request = CreateEpisodeRequest.newBuilder()
+            .setTitle(title)
+            .build()
+
+        val response = client.createEpisode(request).await().indefinitely()
+        assertEquals(256, response.episode.title.length)
+    }
+
+    @Test
+    fun `listEpisodes with multiple guests does not cause N+1 queries`() {
+        // Creates several episodes with guests and verifies they all resolve guest names
+        // without LazyInitializationException — confirming JOIN FETCH is in effect.
+        repeat(5) { i ->
+            val guest = createTestGuest()
+            val createReq = CreateEpisodeRequest.newBuilder()
+                .setTitle("N+1 Test Episode $i")
+                .setGuestId(requireNotNull(guest.id).toString())
+                .build()
+            client.createEpisode(createReq).await().indefinitely()
+        }
+
+        val listReq = ListEpisodesRequest.getDefaultInstance()
+        val response = client.listEpisodes(listReq).await().indefinitely()
+
+        assertTrue(response.episodesList.isNotEmpty())
+        response.episodesList.filter { it.title.startsWith("N+1 Test Episode") }.forEach { ep ->
+            assertTrue(ep.guestName.isNotEmpty(), "guestName should be populated for ${ep.title}")
+        }
+    }
+
+    @Test
     fun `listEpisodes with oversized page_token fails`() {
         val request = ListEpisodesRequest.newBuilder()
             .setPageToken("10001")

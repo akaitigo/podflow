@@ -26,7 +26,7 @@ class Episode : PanacheEntityBase {
     @Column(name = "id", updatable = false, nullable = false)
     var id: UUID? = null
 
-    @Column(name = "title", nullable = false)
+    @Column(name = "title", nullable = false, length = 500)
     var title: String = ""
 
     @Column(name = "description", columnDefinition = "TEXT")

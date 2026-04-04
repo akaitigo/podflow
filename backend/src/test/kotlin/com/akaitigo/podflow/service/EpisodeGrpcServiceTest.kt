@@ -607,7 +607,51 @@ class EpisodeGrpcServiceTest {
         assertTrue(response.episode.publishedAt.seconds > 0)
     }
 
-    private fun createTestEpisode(title: String): ProtoEpisode {
+    @Test
+    fun `getEpisode with guest does not throw LazyInitializationException`() {
+        val guest = createTestGuest()
+        val createReq = CreateEpisodeRequest.newBuilder()
+            .setTitle("Guest Lazy Load Test")
+            .setGuestId(requireNotNull(guest.id).toString())
+            .build()
+        val created = client.createEpisode(createReq).await().indefinitely().episode
+
+        val getReq = GetEpisodeRequest.newBuilder()
+            .setId(created.id)
+            .build()
+        val response = client.getEpisode(getReq).await().indefinitely()
+        assertEquals("Test Guest", response.episode.guestName)
+    }
+
+    @Test
+    fun `listEpisodes with guest does not throw LazyInitializationException`() {
+        val guest = createTestGuest()
+        val createReq = CreateEpisodeRequest.newBuilder()
+            .setTitle("List Guest Lazy Test")
+            .setGuestId(requireNotNull(guest.id).toString())
+            .build()
+        client.createEpisode(createReq).await().indefinitely()
+
+        val listReq = ListEpisodesRequest.getDefaultInstance()
+        val response = client.listEpisodes(listReq).await().indefinitely()
+        val ep = response.episodesList.first { it.title == "List Guest Lazy Test" }
+        assertEquals("Test Guest", ep.guestName)
+    }
+
+    @Test
+    fun `listEpisodes with oversized page_token fails`() {
+        val request = ListEpisodesRequest.newBuilder()
+            .setPageToken("10001")
+            .build()
+
+        val exception = assertThrows<StatusRuntimeException> {
+            client.listEpisodes(request).await().indefinitely()
+        }
+        assertEquals(io.grpc.Status.INVALID_ARGUMENT.code, exception.status.code)
+        assertTrue(requireNotNull(exception.status.description).contains("10000"))
+    }
+
+        private fun createTestEpisode(title: String): ProtoEpisode {
         val request = CreateEpisodeRequest.newBuilder()
             .setTitle(title)
             .build()

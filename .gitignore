@@ -7,8 +7,7 @@ frontend/dist/
 frontend/src/**/*.js
 frontend/*.tsbuildinfo
 
-# Generated protobuf/gRPC code
-frontend/src/gen/
+# Generated protobuf/gRPC code (TypeScript committed to repo)
 backend/build/
 backend/.gradle/
 backend/src/main/java/

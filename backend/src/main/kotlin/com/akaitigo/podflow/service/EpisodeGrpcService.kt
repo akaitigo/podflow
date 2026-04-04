@@ -400,16 +400,14 @@ class EpisodeGrpcService @Inject constructor(
             }
             return try {
                 val page = token.toInt()
-                if (page < 0) {
-                    throw StatusRuntimeException(
-                        Status.INVALID_ARGUMENT.withDescription("page_token must be non-negative"),
-                    )
+                val description = when {
+                    page < 0 -> "page_token must be non-negative"
+                    page > MAX_PAGE_INDEX -> "page_token must not exceed $MAX_PAGE_INDEX"
+                    else -> null
                 }
-                if (page > MAX_PAGE_INDEX) {
+                if (description != null) {
                     throw StatusRuntimeException(
-                        Status.INVALID_ARGUMENT.withDescription(
-                            "page_token must not exceed $MAX_PAGE_INDEX",
-                        ),
+                        Status.INVALID_ARGUMENT.withDescription(description),
                     )
                 }
                 page

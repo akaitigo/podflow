@@ -10,6 +10,23 @@ class SocialLinkConverterTest {
     private val converter = SocialLinkListConverter()
 
     @Test
+    fun `convertToEntityAttribute returns empty list for malformed JSON`() {
+        // Simulates DB corruption or manual edits — must not crash the query
+        assertTrue(converter.convertToEntityAttribute("not-json").isEmpty())
+    }
+
+    @Test
+    fun `convertToEntityAttribute returns empty list for truncated JSON array`() {
+        assertTrue(converter.convertToEntityAttribute("""[{"url":"https://example.com"""").isEmpty())
+    }
+
+    @Test
+    fun `convertToEntityAttribute returns empty list for JSON object instead of array`() {
+        // Wrong top-level type stored in DB
+        assertTrue(converter.convertToEntityAttribute("""{"url":"https://example.com"}""").isEmpty())
+    }
+
+    @Test
     fun `convertToDatabaseColumn serializes list to JSON`() {
         val links = listOf(
             SocialLink("https://twitter.com/guest"),

@@ -75,6 +75,7 @@ class EpisodeGrpcService @Inject constructor(
                 .build()
         }
 
+    @Transactional
     override fun getEpisode(request: GetEpisodeRequest): Uni<GetEpisodeResponse> =
         Uni.createFrom().item {
             val id = parseUuid(request.id, "id")
@@ -85,6 +86,7 @@ class EpisodeGrpcService @Inject constructor(
                 .build()
         }
 
+    @Transactional
     override fun listEpisodes(request: ListEpisodesRequest): Uni<ListEpisodesResponse> =
         Uni.createFrom().item {
             val pageSize = when {
@@ -137,7 +139,6 @@ class EpisodeGrpcService @Inject constructor(
                 applyGuestUpdate(existing, protoEpisode)
             }
 
-            existing.updatedAt = Instant.now()
             episodeRepository.persistAndFlush(existing)
 
             UpdateEpisodeResponse.newBuilder()
@@ -391,15 +392,22 @@ class EpisodeGrpcService @Inject constructor(
                 )
             }
 
+        private const val MAX_PAGE_INDEX = 10_000
+
         fun parsePageToken(token: String): Int {
             if (token.isEmpty()) {
                 return 0
             }
             return try {
                 val page = token.toInt()
-                if (page < 0) {
+                val description = when {
+                    page < 0 -> "page_token must be non-negative"
+                    page > MAX_PAGE_INDEX -> "page_token must not exceed $MAX_PAGE_INDEX"
+                    else -> null
+                }
+                if (description != null) {
                     throw StatusRuntimeException(
-                        Status.INVALID_ARGUMENT.withDescription("page_token must be non-negative"),
+                        Status.INVALID_ARGUMENT.withDescription(description),
                     )
                 }
                 page

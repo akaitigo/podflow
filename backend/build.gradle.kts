@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.1.0"
-    kotlin("plugin.allopen") version "2.1.0"
+    kotlin("jvm") version "2.2.0"
+    kotlin("plugin.allopen") version "2.2.0"
     id("io.quarkus") version "3.34.2"
     id("io.gitlab.arturbosch.detekt") version "1.23.8"
 }
@@ -39,9 +39,11 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_21.toString()
-    kotlinOptions.javaParameters = true
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        javaParameters.set(true)
+    }
 }
 
 allOpen {

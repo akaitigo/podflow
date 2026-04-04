@@ -298,13 +298,7 @@ class EpisodeGrpcService @Inject constructor(
         }
 
         fun validateAudioUrl(url: String) {
-            if (url.length > MAX_AUDIO_URL_LENGTH) {
-                throw StatusRuntimeException(
-                    Status.INVALID_ARGUMENT.withDescription(
-                        "audio_url must not exceed $MAX_AUDIO_URL_LENGTH characters",
-                    ),
-                )
-            }
+            validateFieldLength(url, "audio_url", MAX_AUDIO_URL_LENGTH)
             val parsed = try {
                 java.net.URI(url)
             } catch (_: java.net.URISyntaxException) {

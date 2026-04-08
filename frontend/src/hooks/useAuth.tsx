@@ -61,6 +61,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 		return null;
 	}, []);
 
+	const isMockMode = authApi === null && import.meta.env.DEV;
+
 	useEffect(() => {
 		const stored = loadStoredUser();
 		if (stored) {
@@ -72,7 +74,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	const login = useCallback(
 		async (credentials: LoginCredentials) => {
 			if (!authApi) {
-				// Mock mode: skip actual API call
+				if (!isMockMode) {
+					throw new Error("VITE_API_URL is not configured. Cannot authenticate in production.");
+				}
+				// Mock mode: only available in development builds
 				const mockUser: AuthUser = {
 					token: "mock-token",
 					username: credentials.username,
@@ -92,13 +97,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 			setUser(authUser);
 			saveUser(authUser);
 		},
-		[authApi],
+		[authApi, isMockMode],
 	);
 
 	const register = useCallback(
 		async (payload: RegisterPayload) => {
 			if (!authApi) {
-				// Mock mode: skip actual API call
+				if (!isMockMode) {
+					throw new Error("VITE_API_URL is not configured. Cannot register in production.");
+				}
+				// Mock mode: only available in development builds
 				const mockUser: AuthUser = {
 					token: "mock-token",
 					username: payload.username,
@@ -118,7 +126,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 			setUser(authUser);
 			saveUser(authUser);
 		},
-		[authApi],
+		[authApi, isMockMode],
 	);
 
 	const logout = useCallback(() => {

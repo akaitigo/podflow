@@ -22,6 +22,10 @@ backend/src/main/java/
 .env.local
 .env.*.local
 
+# JWT keys (never commit private/public keys to repo)
+*.pem
+!backend/src/test/resources/*.pem
+
 # OS
 .DS_Store
 Thumbs.db

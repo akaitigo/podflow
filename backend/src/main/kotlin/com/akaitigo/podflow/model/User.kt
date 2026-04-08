@@ -21,13 +21,13 @@ class User : PanacheEntityBase {
     @Column(name = "id", updatable = false, nullable = false)
     var id: UUID? = null
 
-    @Column(name = "username", nullable = false, unique = true, length = 100)
+    @Column(name = "username", nullable = false, unique = true, length = 50)
     var username: String = ""
 
     @Column(name = "password_hash", nullable = false)
     var passwordHash: String = ""
 
-    @Column(name = "display_name", nullable = false)
+    @Column(name = "display_name", nullable = false, length = 255)
     var displayName: String = ""
 
     @Column(name = "role", nullable = false, length = 50)

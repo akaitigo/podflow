@@ -146,8 +146,8 @@ class AuthResourceTest {
     }
 
     @Test
-    fun `register with username exceeding 100 chars fails`() {
-        val longUsername = "a".repeat(101)
+    fun `register with username exceeding 50 chars fails`() {
+        val longUsername = "a".repeat(51)
 
         given()
             .contentType(ContentType.JSON)
@@ -156,7 +156,92 @@ class AuthResourceTest {
             .post("/auth/register")
             .then()
             .statusCode(400)
-            .body("error", equalTo("Username must not exceed 100 characters"))
+            .body("error", equalTo("Username must not exceed 50 characters"))
+    }
+
+    @Test
+    fun `register with display name exceeding 255 chars fails`() {
+        val longDisplayName = "a".repeat(256)
+
+        given()
+            .contentType(ContentType.JSON)
+            .body("""{"username":"validuser","password":"password123","displayName":"$longDisplayName"}""")
+            .`when`()
+            .post("/auth/register")
+            .then()
+            .statusCode(400)
+            .body("error", equalTo("Display name must not exceed 255 characters"))
+    }
+
+    @Test
+    fun `register with display name at 255 chars succeeds`() {
+        val maxDisplayName = "a".repeat(255)
+
+        given()
+            .contentType(ContentType.JSON)
+            .body("""{"username":"validuser255","password":"password123","displayName":"$maxDisplayName"}""")
+            .`when`()
+            .post("/auth/register")
+            .then()
+            .statusCode(201)
+            .body("username", equalTo("validuser255"))
+    }
+
+    @Test
+    fun `register with password exceeding 72 bytes fails`() {
+        val longPassword = "a".repeat(73)
+
+        given()
+            .contentType(ContentType.JSON)
+            .body("""{"username":"byteuser","password":"$longPassword","displayName":"Test"}""")
+            .`when`()
+            .post("/auth/register")
+            .then()
+            .statusCode(400)
+            .body("error", equalTo("Password must not exceed 72 bytes"))
+    }
+
+    @Test
+    fun `register with password at exactly 72 bytes succeeds`() {
+        val exactPassword = "a".repeat(72)
+
+        given()
+            .contentType(ContentType.JSON)
+            .body("""{"username":"exactbyteuser","password":"$exactPassword","displayName":"Test"}""")
+            .`when`()
+            .post("/auth/register")
+            .then()
+            .statusCode(201)
+            .body("username", equalTo("exactbyteuser"))
+    }
+
+    @Test
+    fun `register with multibyte password exceeding 72 bytes fails`() {
+        // Each CJK character is 3 bytes in UTF-8, so 25 characters = 75 bytes
+        val multibytePassword = "\u6F22".repeat(25)
+
+        given()
+            .contentType(ContentType.JSON)
+            .body("""{"username":"mbuser","password":"$multibytePassword","displayName":"Test"}""")
+            .`when`()
+            .post("/auth/register")
+            .then()
+            .statusCode(400)
+            .body("error", equalTo("Password must not exceed 72 bytes"))
+    }
+
+    @Test
+    fun `login with password exceeding 72 bytes fails`() {
+        val longPassword = "a".repeat(73)
+
+        given()
+            .contentType(ContentType.JSON)
+            .body("""{"username":"anyuser","password":"$longPassword"}""")
+            .`when`()
+            .post("/auth/login")
+            .then()
+            .statusCode(400)
+            .body("error", equalTo("Password must not exceed 72 bytes"))
     }
 
     @Test

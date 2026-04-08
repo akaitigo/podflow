@@ -146,6 +146,7 @@ class AuthResource @Inject constructor(
         jwtTokenService.generateToken(
             userId = requireNotNull(user.id).toString(),
             username = user.username,
+            displayName = user.displayName,
             role = user.role,
         )
 

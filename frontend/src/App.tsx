@@ -6,13 +6,17 @@ import { ErrorBanner } from "./components/ErrorBanner";
 import { Header } from "./components/Header";
 import headerStyles from "./components/Header.module.css";
 import { KanbanBoard } from "./components/KanbanBoard";
+import { LoginPage } from "./components/LoginPage";
+import { useAuth } from "./hooks/useAuth";
 import { useEpisodes } from "./hooks/useEpisodes";
 import { useIsMobile } from "./hooks/useMediaQuery";
 import { createApiClient } from "./lib/api-factory";
 import type { CreateEpisodeInput, Episode, EpisodeStatus, UpdateEpisodeInput } from "./types/episode";
 
 function App() {
-	const api = useMemo(() => createApiClient(), []);
+	const { user, loading: authLoading, logout } = useAuth();
+
+	const api = useMemo(() => createApiClient(user ? () => user.token : undefined), [user]);
 	const { episodes, loading, error, createEpisode, updateEpisode, deleteEpisode, clearError } = useEpisodes(api);
 
 	const isMobile = useIsMobile();
@@ -72,9 +76,17 @@ function App() {
 		setSelectedEpisode(episode);
 	}, []);
 
+	if (authLoading) {
+		return <div className={headerStyles.loading}>Loading...</div>;
+	}
+
+	if (!user) {
+		return <LoginPage />;
+	}
+
 	return (
 		<div>
-			<Header onCreateClick={() => setShowCreateModal(true)} />
+			<Header onCreateClick={() => setShowCreateModal(true)} displayName={user.displayName} onLogout={logout} />
 			{error && <ErrorBanner message={error} onDismiss={clearError} />}
 			{loading ? (
 				<div className={headerStyles.loading}>Loading episodes...</div>

@@ -58,6 +58,7 @@ class AuthResource @Inject constructor(
                 "Username and password are required",
             )
         }
+        validatePasswordByteLength(request.password)
     }
 
     private fun authenticateUser(username: String, password: String): User {
@@ -79,8 +80,19 @@ class AuthResource @Inject constructor(
 
     private fun validateRegisterRequest(request: RegisterRequest) {
         validateUsernameFormat(request.username)
+        validateDisplayNameLength(request.displayName)
         validatePasswordStrength(request.password)
+        validatePasswordByteLength(request.password)
         ensureUsernameAvailable(request.username)
+    }
+
+    private fun validateDisplayNameLength(displayName: String) {
+        if (displayName.isNotBlank() && displayName.length > MAX_DISPLAY_NAME_LENGTH) {
+            throw AuthException(
+                Response.Status.BAD_REQUEST,
+                "Display name must not exceed $MAX_DISPLAY_NAME_LENGTH characters",
+            )
+        }
     }
 
     private fun validateUsernameFormat(username: String) {
@@ -95,6 +107,15 @@ class AuthResource @Inject constructor(
             throw AuthException(
                 Response.Status.BAD_REQUEST,
                 "Password must be at least $MIN_PASSWORD_LENGTH characters",
+            )
+        }
+    }
+
+    private fun validatePasswordByteLength(password: String) {
+        if (password.toByteArray(Charsets.UTF_8).size > BCRYPT_MAX_PASSWORD_BYTES) {
+            throw AuthException(
+                Response.Status.BAD_REQUEST,
+                "Password must not exceed $BCRYPT_MAX_PASSWORD_BYTES bytes",
             )
         }
     }
@@ -130,12 +151,16 @@ class AuthResource @Inject constructor(
 
     companion object {
         private const val MIN_PASSWORD_LENGTH = 8
-        private const val MAX_USERNAME_LENGTH = 100
+        private const val BCRYPT_MAX_PASSWORD_BYTES = 72
+        private const val MIN_USERNAME_LENGTH = 1
+        private const val MAX_USERNAME_LENGTH = 50
+        private const val MAX_DISPLAY_NAME_LENGTH = 255
         private val USERNAME_PATTERN = Regex("^[a-zA-Z0-9_-]+$")
 
         /** Returns an error message if the username format is invalid, or null. */
         fun usernameFormatError(username: String): String? = when {
             username.isBlank() -> "Username is required"
+            username.length < MIN_USERNAME_LENGTH -> "Username must be at least $MIN_USERNAME_LENGTH characters"
             username.length > MAX_USERNAME_LENGTH ->
                 "Username must not exceed $MAX_USERNAME_LENGTH characters"
             !USERNAME_PATTERN.matches(username) ->

@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import type { Client } from "@connectrpc/connect";
+import type { Client, Interceptor } from "@connectrpc/connect";
 import { createClient } from "@connectrpc/connect";
 import { createGrpcWebTransport } from "@connectrpc/connect-web";
 import type { Episode as ProtoEpisode } from "../gen/podflow/v1/episode_pb";
@@ -66,12 +66,32 @@ function toFrontendEpisode(proto: ProtoEpisode): Episode {
 }
 
 /**
+ * Create an interceptor that adds the Authorization header with a Bearer token.
+ *
+ * @param getToken - A function that returns the current auth token, or null.
+ */
+function createAuthInterceptor(getToken: () => string | null): Interceptor {
+	return (next) => async (req) => {
+		const token = getToken();
+		if (token) {
+			req.header.set("Authorization", `Bearer ${token}`);
+		}
+		return next(req);
+	};
+}
+
+/**
  * Create an EpisodeApi implementation backed by a gRPC-Web connection.
  *
  * @param baseUrl - The base URL of the gRPC backend (e.g. "http://localhost:8080").
+ * @param getToken - Optional function to provide the auth token for requests.
  */
-export function createGrpcApi(baseUrl: string): EpisodeApi {
-	const transport = createGrpcWebTransport({ baseUrl });
+export function createGrpcApi(baseUrl: string, getToken?: () => string | null): EpisodeApi {
+	const interceptors: Interceptor[] = [];
+	if (getToken) {
+		interceptors.push(createAuthInterceptor(getToken));
+	}
+	const transport = createGrpcWebTransport({ baseUrl, interceptors });
 	const client: Client<typeof EpisodeService> = createClient(EpisodeService, transport);
 
 	return {

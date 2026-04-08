@@ -2,7 +2,7 @@
 
 ## ステータス
 
-Accepted
+Superseded by [ADR-005](005-jwt-authentication.md)
 
 ## コンテキスト
 

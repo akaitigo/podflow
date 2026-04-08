@@ -23,7 +23,10 @@ dependencies {
     implementation("io.quarkus:quarkus-arc")
     implementation("io.quarkus:quarkus-rest")
     implementation("io.quarkus:quarkus-rest-jackson")
+    implementation("io.quarkus:quarkus-smallrye-jwt")
+    implementation("io.quarkus:quarkus-smallrye-jwt-build")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
+    implementation("org.mindrot:jbcrypt:0.4")
     // Required by Quarkus-generated protobuf Kotlin extension files (*Kt.kt) in protobuf-java 4.x
     implementation("com.google.protobuf:protobuf-kotlin")
 

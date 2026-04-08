@@ -1,15 +1,36 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import App from "../App";
+import { AuthProvider } from "../hooks/useAuth";
+
+/** Render App wrapped with AuthProvider. Pre-seeds localStorage with a mock auth token. */
+function renderApp() {
+	return render(
+		<AuthProvider>
+			<App />
+		</AuthProvider>,
+	);
+}
+
+/** Set up a mock authenticated user in localStorage before each test. */
+function seedAuthStorage() {
+	localStorage.setItem("podflow_auth_token", "mock-test-token");
+	localStorage.setItem("podflow_auth_user", JSON.stringify({ username: "testuser", displayName: "Test User" }));
+}
 
 afterEach(() => {
 	cleanup();
+	localStorage.clear();
+});
+
+beforeEach(() => {
+	seedAuthStorage();
 });
 
 describe("App", () => {
 	it("renders the heading and episode board header", async () => {
-		render(<App />);
+		renderApp();
 		expect(screen.getByRole("heading", { name: /podflow/i })).toBeDefined();
 		await waitFor(() => {
 			expect(screen.getByText("Episode Board")).toBeDefined();
@@ -17,14 +38,14 @@ describe("App", () => {
 	});
 
 	it("shows the New Episode button", async () => {
-		render(<App />);
+		renderApp();
 		await waitFor(() => {
 			expect(screen.getByText("New Episode")).toBeDefined();
 		});
 	});
 
 	it("displays episode cards after loading", async () => {
-		render(<App />);
+		renderApp();
 		await waitFor(() => {
 			expect(screen.getByText("The Future of AI in Podcasting")).toBeDefined();
 		});
@@ -32,7 +53,7 @@ describe("App", () => {
 
 	it("opens create modal when New Episode is clicked", async () => {
 		const user = userEvent.setup();
-		render(<App />);
+		renderApp();
 
 		await waitFor(() => {
 			expect(screen.getByText("New Episode")).toBeDefined();
@@ -45,7 +66,7 @@ describe("App", () => {
 
 	it("creates a new episode via the modal", async () => {
 		const user = userEvent.setup();
-		render(<App />);
+		renderApp();
 
 		await waitFor(() => {
 			expect(screen.getByText("New Episode")).toBeDefined();
@@ -68,7 +89,7 @@ describe("App", () => {
 
 	it("opens episode detail modal when a card is clicked", async () => {
 		const user = userEvent.setup();
-		render(<App />);
+		renderApp();
 
 		await waitFor(() => {
 			expect(screen.getByText("The Future of AI in Podcasting")).toBeDefined();
@@ -82,7 +103,7 @@ describe("App", () => {
 	});
 
 	it("renders all six kanban columns", async () => {
-		render(<App />);
+		renderApp();
 
 		await waitFor(() => {
 			expect(screen.getByLabelText("Planning column")).toBeDefined();
@@ -91,6 +112,31 @@ describe("App", () => {
 			expect(screen.getByLabelText("Editing column")).toBeDefined();
 			expect(screen.getByLabelText("Review column")).toBeDefined();
 			expect(screen.getByLabelText("Published column")).toBeDefined();
+		});
+	});
+
+	it("shows login page when not authenticated", async () => {
+		localStorage.clear();
+		renderApp();
+
+		await waitFor(() => {
+			expect(screen.getByText("Sign in to your account")).toBeDefined();
+		});
+	});
+
+	it("shows logout button when authenticated", async () => {
+		renderApp();
+
+		await waitFor(() => {
+			expect(screen.getByText("Logout")).toBeDefined();
+		});
+	});
+
+	it("shows user display name when authenticated", async () => {
+		renderApp();
+
+		await waitFor(() => {
+			expect(screen.getByText("Test User")).toBeDefined();
 		});
 	});
 });

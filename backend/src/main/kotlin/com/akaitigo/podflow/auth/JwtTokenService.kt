@@ -16,12 +16,12 @@ class JwtTokenService(
 ) {
 
     /** Generate a signed JWT for the given user. */
-    fun generateToken(userId: String, username: String, role: String): String =
+    fun generateToken(userId: String, username: String, displayName: String, role: String): String =
         Jwt.issuer(issuer)
             .subject(userId)
             .upn(username)
             .groups(setOf(role))
-            .claim("displayName", username)
+            .claim("displayName", displayName)
             .expiresIn(Duration.ofMinutes(expirationMinutes))
             .sign()
 }

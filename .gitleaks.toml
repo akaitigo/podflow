@@ -3,7 +3,11 @@ useDefault = true
 
 [[allowlists]]
 description = "Deterministic public JWT key used only by automated tests"
-paths = ['''^backend/src/test/resources/(privateKey|publicKey)\.pem$''']
+paths = ['''(^|/)backend/src/test/resources/(privateKey|publicKey)\.pem$''']
+
+[[allowlists]]
+description = "Generated build output; source inputs are scanned separately"
+paths = ['''(^|/)backend/build/''', '''(^|/)frontend/(node_modules|dist|coverage)/''']
 
 [[allowlists]]
 description = "Reviewed commit where the same test fixture briefly existed in main resources; never deployed"

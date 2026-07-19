@@ -1,0 +1,10 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Deterministic public JWT key used only by automated tests"
+paths = ['''^backend/src/test/resources/(privateKey|publicKey)\.pem$''']
+
+[[allowlists]]
+description = "Reviewed commit where the same test fixture briefly existed in main resources; never deployed"
+commits = ["57df202b9252a19a1a7eb0dad2d1031bb542bdd9"]

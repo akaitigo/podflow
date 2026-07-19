@@ -64,7 +64,7 @@ docs/adr/          — Architecture Decision Records
 ```
 DATABASE_URL=postgresql://localhost:5432/podflow
 GCS_BUCKET=podflow-audio
-DB_PASSWORD=<password>
+# DB_PASSWORD is required; inject it at runtime
 JWT_EXPIRATION_MINUTES=60
 CORS_ORIGINS=http://localhost:5173
 ```

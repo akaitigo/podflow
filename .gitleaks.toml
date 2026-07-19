@@ -1,0 +1,18 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Exact deterministic JWT private-key fixture used only by automated tests"
+targetRules = ["private-key"]
+regexTarget = "match"
+regexes = ['''MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCrJHGvBZekdA3U''']
+
+[[allowlists]]
+description = "Generated build output; source inputs are scanned separately"
+paths = ['''(^|/)backend/build/''', '''(^|/)frontend/(node_modules|dist|coverage)/''']
+
+[[allowlists]]
+description = "Exact historical documentation placeholder misidentified as an API key"
+targetRules = ["generic-api-key"]
+regexTarget = "match"
+regexes = ['''password>\nJWT_EXPIRATION_MINUTES=60''']

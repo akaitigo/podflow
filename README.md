@@ -4,8 +4,7 @@
 > - **認証**: JWT認証が実装済みです（[ADR-005](docs/adr/005-jwt-authentication.md)）。全gRPCエンドポイントは認証必須です。
 > - **HTTPS**: 本番では必ずTLS終端を設定してください。JWTトークンが平文で送信されるリスクがあります。Cloud RunやロードバランサーでTLS終端を行うことを推奨します。
 > - **CORS**: `CORS_ORIGINS` 環境変数で許可オリジンを本番ドメインに制限してください。
-> - **JWT鍵管理**: 本番用のRSA鍵ペアを別途生成し、開発用の鍵を使い回さないでください。
-> - **git履歴の秘密鍵除去**: 過去のコミットに開発用RSA秘密鍵（`privateKey.pem`）が残存しています。本番デプロイ前に `git-filter-repo` 等を使用してgit履歴から秘密鍵を完全に除去してください。除去せずにpublicリポジトリとして公開すると、過去の鍵が漏洩するリスクがあります。
+> - **JWT鍵管理**: `MP_JWT_VERIFY_PUBLICKEY_LOCATION` と `MP_JWT_SIGN_KEY_LOCATION` は本番で必須です。環境ごとに生成したRSA鍵ペアをSecret Manager等から渡してください。`backend/src/test/resources/` の鍵は自動テスト専用の公開フィクスチャであり、本番では使用できません。
 > - **リフレッシュトークン**: 現在はトークン期限切れ時に再ログインが必要です。長時間セッションが必要な場合はリフレッシュトークンの導入を検討してください。
 
 Podcast制作のワークフローを一元管理するツール。企画→収録→編集→公開の各ステージをカンバンで管理し、ゲスト調整・ショーノート生成・配信プラットフォームへの一括公開を自動化。
@@ -53,6 +52,8 @@ pnpm dev
 ```bash
 # JDK 21+ が必要
 cd backend
+export MP_JWT_VERIFY_PUBLICKEY_LOCATION=/run/secrets/podflow-public-key.pem
+export MP_JWT_SIGN_KEY_LOCATION=/run/secrets/podflow-private-key.pem
 ./gradlew quarkusDev   # http://localhost:8080, gRPC :9000
 ```
 

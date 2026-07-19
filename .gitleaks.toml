@@ -2,13 +2,17 @@
 useDefault = true
 
 [[allowlists]]
-description = "Deterministic public JWT key used only by automated tests"
-paths = ['''(^|/)backend/src/test/resources/(privateKey|publicKey)\.pem$''']
+description = "Exact deterministic JWT private-key fixture used only by automated tests"
+targetRules = ["private-key"]
+regexTarget = "match"
+regexes = ['''MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCrJHGvBZekdA3U''']
 
 [[allowlists]]
 description = "Generated build output; source inputs are scanned separately"
 paths = ['''(^|/)backend/build/''', '''(^|/)frontend/(node_modules|dist|coverage)/''']
 
 [[allowlists]]
-description = "Reviewed commit where the same test fixture briefly existed in main resources; never deployed"
-commits = ["57df202b9252a19a1a7eb0dad2d1031bb542bdd9"]
+description = "Exact historical documentation placeholder misidentified as an API key"
+targetRules = ["generic-api-key"]
+regexTarget = "match"
+regexes = ['''password>\nJWT_EXPIRATION_MINUTES=60''']
